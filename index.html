@@ -1,0 +1,1022 @@
+<title>Meuro AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app shell. Phone: one column with a bottom tab bar. Desktop: left rail + content column.
+   Meuro green leads; market orange marks food, money and alerts. */
+:root{
+  --bg:#F3F5EF; --surface:#FFFFFF; --surface-2:#EAEEE6; --ink:#14221A; --muted:#5B6A60; --line:#DAE1D6;
+  --green:#2F7D45; --green-ink:#17402A; --green-soft:#DDEEDF; --orange:#E8711F; --orange-soft:#FCE6D3;
+  --prot:#2F7D45; --carb:#E8A21F; --fat:#C2532B; --fibre:#4E7FA8; --bad:#C2412B; --good:#2F7D45;
+  --shadow:0 1px 2px rgba(20,34,26,.06),0 10px 28px -14px rgba(20,34,26,.22);
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree","Helvetica Neue",Arial,system-ui,sans-serif;
+  --r:18px; --r-sm:12px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1410; --surface:#151F19; --surface-2:#1C2821; --ink:#ECF2EC; --muted:#A0AFA4; --line:#2A3A30;
+  --green:#5DB574; --green-ink:#CFE9D6; --green-soft:#1B3022; --orange:#F2924A; --orange-soft:#3A2416;
+  --prot:#5DB574; --carb:#E9B54A; --fat:#E07A52; --fibre:#7FA9CF; --bad:#EF7A63; --good:#5DB574;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 32px -16px rgba(0,0,0,.7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1410; --surface:#151F19; --surface-2:#1C2821; --ink:#ECF2EC; --muted:#A0AFA4; --line:#2A3A30;
+  --green:#5DB574; --green-ink:#CFE9D6; --green-soft:#1B3022; --orange:#F2924A; --orange-soft:#3A2416;
+  --prot:#5DB574; --carb:#E9B54A; --fat:#E07A52; --fibre:#7FA9CF; --bad:#EF7A63; --good:#5DB574;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 32px -16px rgba(0,0,0,.7); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+h1,h2,h3,h4{font-family:var(--f-display);font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:8px}
+.tnum{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13.5px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--green)}
+
+/* shell */
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100%}
+.rail{position:sticky;top:0;height:100vh;padding:24px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.rail .brand{display:flex;align-items:center;gap:10px;padding:4px 10px 18px}
+.brand img{height:26px;width:auto}
+.brand b{font:600 18px var(--f-display);color:var(--green)}
+.navbtn{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:0;background:none;cursor:pointer;text-align:left;font-weight:600;color:var(--muted)}
+.navbtn svg{width:20px;height:20px;flex:none}
+.navbtn[aria-current="page"]{background:var(--green-soft);color:var(--green-ink)}
+.navbtn:hover{color:var(--ink)}
+.rail .spacer{flex:1}
+.main{min-width:0;padding-block:28px 40px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.inner{max-width:980px;margin:0 auto;display:grid;gap:22px}
+.tabbar{display:none}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .rail{display:none}
+  .main{padding-block:16px 104px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+  .tabbar .navbtn{flex-direction:column;gap:2px;font-size:11.5px;padding:6px 2px;justify-content:center;align-items:center}
+  .tabbar .navbtn.scanbtn svg{width:26px;height:26px}
+  .mobilehead{display:flex!important}
+}
+.mobilehead{display:none;align-items:center;justify-content:space-between;gap:12px}
+
+/* parts */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);min-width:0}
+.card.flat{box-shadow:none}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 20px;border-radius:999px;border:1px solid transparent;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:disabled{opacity:.55;cursor:default}
+.btn-primary{background:var(--green);color:#fff}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-sm{height:36px;padding:0 14px;font-size:14px}
+.btn-link{background:none;border:0;color:var(--green);font-weight:600;cursor:pointer;padding:0}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:14px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--surface-2);color:var(--muted)}
+.pill.ok{background:var(--green-soft);color:var(--green-ink)}
+.pill.warn{background:var(--orange-soft);color:var(--orange)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+label.field{display:grid;gap:6px;font-weight:600;font-size:14.5px}
+.input,select.input,textarea.input{height:46px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 14px;width:100%;min-width:0}
+textarea.input{height:auto;min-height:90px;padding:12px 14px;resize:vertical}
+.input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.hint{font-weight:400;color:var(--muted);font-size:13px}
+.note{padding:12px 14px;border-radius:12px;background:var(--surface-2);font-size:14px;color:var(--muted)}
+.note.warn{background:var(--orange-soft);color:var(--ink)}
+.err{color:var(--bad);font-size:14px}
+.spinner{width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}}
+.thumb{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:var(--surface-2)}
+.empty{padding:22px;border:1.5px dashed var(--line);border-radius:var(--r);text-align:center;color:var(--muted);display:grid;gap:10px;justify-items:center}
+table.t{width:100%;border-collapse:collapse;font-size:14.5px}
+table.t th,table.t td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t th{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+table.t td.num,table.t th.num{text-align:right}
+.scroll-x{overflow-x:auto}
+
+/* onboarding */
+.ob{min-height:100%;display:grid;place-items:start center;padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ob-card{width:min(640px,100%);display:grid;gap:22px}
+.progress{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--green);border-radius:999px;transition:width .3s}
+.ob h1{font-size:clamp(28px,4.4vw,40px)}
+.ob .q{display:grid;gap:14px}
+.ob-foot{display:flex;justify-content:space-between;gap:12px}
+
+/* dashboard */
+.hello h1{font-size:clamp(26px,3.6vw,38px)}
+.rings{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center}
+@media (max-width:520px){.rings{grid-template-columns:1fr;justify-items:center}}
+.macro{display:grid;gap:6px}
+.macro .bar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.macro .bar i{display:block;height:100%;border-radius:999px}
+.bigscan{display:flex;gap:16px;align-items:center;justify-content:space-between;background:var(--green);color:#fff;border-radius:var(--r);padding:20px;border:0;cursor:pointer;text-align:left;width:100%}
+.bigscan b{font:600 20px var(--f-display)}
+.bigscan span{opacity:.88;font-size:14px}
+.bigscan .ico{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
+.meal{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.meal:last-child{border-bottom:0}
+.meal .body{flex:1;min-width:0;display:grid;gap:4px}
+.meal .slot{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange)}
+.meal h4{font-size:17px}
+.kv{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px;color:var(--muted)}
+.kv b{color:var(--ink);font-weight:600}
+details.more{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+details.more summary{cursor:pointer;font-weight:600;color:var(--green);font-size:14px}
+.chart svg{width:100%;height:auto;display:block}
+
+/* scanner */
+.scanwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}
+@media (max-width:860px){.scanwrap{grid-template-columns:1fr}}
+.drop{border:2px dashed var(--line);border-radius:var(--r);min-height:280px;display:grid;place-items:center;text-align:center;padding:20px;background:var(--surface);position:relative;overflow:hidden}
+.drop.has img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.drop.drag{border-color:var(--green);background:var(--green-soft)}
+.conf{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}
+.conf i{width:34px;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;display:inline-block}
+.conf i b{display:block;height:100%;background:var(--green)}
+.item-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 34px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.item-row .grams{display:flex;align-items:center;gap:4px}
+.item-row .grams input{height:38px;text-align:right;padding:0 8px}
+.icon-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+
+/* chat */
+.chat{display:grid;grid-template-rows:1fr auto;min-height:min(70vh,640px)}
+.msgs{display:flex;flex-direction:column;gap:12px;overflow:auto;padding-bottom:10px;max-height:min(62vh,560px)}
+.msg{max-width:min(620px,88%);padding:12px 16px;border-radius:18px;white-space:pre-wrap;line-height:1.5}
+.msg.me{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:6px}
+.msg.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
+.composer{display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+.suggest{display:flex;flex-wrap:wrap;gap:8px}
+
+/* pros */
+.pro{display:grid;gap:10px}
+.avatar{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:700;background:var(--green);flex:none}
+.modal{position:fixed;inset:0;z-index:40;background:rgba(10,16,12,.5);display:grid;place-items:center;padding:16px}
+.modal .card{width:min(560px,100%);max-height:90vh;overflow:auto}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:50}
+@media (min-width:861px){.toast{bottom:28px}}
+.gate{min-height:100%;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));text-align:center}
+.gate .card{max-width:520px;display:grid;gap:14px;justify-items:center}
+.sec-title{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sec-title h2{font-size:22px}
+</style>
+
+<div id="root"><div class="gate"><div class="card"><span class="spinner" style="color:var(--green)"></span><p class="muted">Opening Meuro AI…</p></div></div></div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+/* =====================================================================
+   MEURO AFRICAN FOOD TABLE v0.1
+   Approximate values per 100 g, compiled from the FAO/INFOODS West African
+   Food Composition Table (2019) and USDA FoodData Central. Mixed dishes vary
+   with the recipe, so every number the app shows is labelled an estimate.
+   k=kcal p=protein c=carbs f=fat fb=fibre s=sugar na=sodium(mg)
+   ===================================================================== */
+const SOURCE_NOTE="Meuro African Food Table v0.1 — approximate values from the FAO/INFOODS West African Food Composition Table (2019) and USDA FoodData Central. Mixed dishes vary by recipe.";
+const DISHES={
+  jollof:{n:"Jollof rice",k:165,p:3,c:28,f:5,fb:.8,s:1.5,na:350,img:"jollof"},
+  friedrice:{n:"Fried rice",k:175,p:3.5,c:27,f:6,fb:1,s:1.5,na:380,img:"fried-rice"},
+  whiterice:{n:"Boiled white rice",k:130,p:2.7,c:28,f:.3,fb:.4,s:.1,na:1},
+  stew:{n:"Tomato stew",k:110,p:1.5,c:6,f:9,fb:1.5,s:4,na:400,img:"stew-rice"},
+  eba:{n:"Eba (garri)",k:150,p:.5,c:36,f:.2,fb:1.2,s:0,na:5},
+  poundedyam:{n:"Pounded yam",k:118,p:1.5,c:28,f:.2,fb:3.9,s:.5,na:8},
+  amala:{n:"Amala (yam flour)",k:110,p:1.3,c:26,f:.2,fb:2,s:0,na:5,img:"amala"},
+  fufu:{n:"Fufu (cassava)",k:140,p:.5,c:34,f:.2,fb:1.5,s:1,na:10},
+  egusi:{n:"Egusi soup",k:220,p:9,c:6,f:18,fb:2.5,s:1.5,na:500,img:"egusi"},
+  ewedu:{n:"Ewedu soup",k:25,p:2,c:3,f:.5,fb:1.5,s:.5,na:300},
+  gbegiri:{n:"Gbegiri (bean soup)",k:110,p:6,c:13,f:4,fb:4,s:1,na:300},
+  okrasoup:{n:"Okra soup",k:90,p:5,c:6,f:5,fb:2.5,s:1.5,na:450,img:"okra"},
+  eforiro:{n:"Efo riro",k:140,p:7,c:5,f:10,fb:3,s:1.5,na:450,img:"efo-riro"},
+  beansporridge:{n:"Beans porridge",k:150,p:7,c:20,f:4.5,fb:6,s:2,na:300},
+  moimoi:{n:"Moi moi",k:150,p:8,c:15,f:6,fb:4,s:1,na:350},
+  akara:{n:"Akara",k:280,p:11,c:22,f:17,fb:6,s:1,na:300},
+  dodo:{n:"Fried plantain (dodo)",k:230,p:1.2,c:37,f:9,fb:2.3,s:17,na:5},
+  boiledplantain:{n:"Boiled plantain",k:116,p:.8,c:31,f:.2,fb:2.3,s:14,na:5},
+  boiledyam:{n:"Boiled yam",k:116,p:1.5,c:27,f:.1,fb:3.9,s:.5,na:8},
+  chicken:{n:"Chicken (stewed)",k:220,p:25,c:2,f:13,fb:0,s:0,na:380},
+  friedchicken:{n:"Fried chicken",k:260,p:24,c:6,f:16,fb:0,s:0,na:450},
+  beef:{n:"Beef (stewed)",k:220,p:26,c:2,f:12,fb:0,s:0,na:400},
+  goatmeat:{n:"Goat meat",k:180,p:27,c:0,f:7.5,fb:0,s:0,na:300},
+  fish:{n:"Fried fish",k:230,p:22,c:3,f:14,fb:0,s:0,na:350},
+  grilledfish:{n:"Grilled fish",k:170,p:23,c:0,f:8,fb:0,s:0,na:300},
+  egg:{n:"Boiled egg",k:155,p:12.6,c:1.1,f:10.6,fb:0,s:1.1,na:124},
+  friedegg:{n:"Fried egg",k:196,p:13.6,c:.8,f:15,fb:0,s:.4,na:207},
+  suya:{n:"Suya",k:260,p:26,c:4,f:15,fb:1,s:1,na:650,img:"suya"},
+  peppersoup:{n:"Pepper soup",k:90,p:11,c:2,f:4,fb:.5,s:.5,na:450,img:"peppersoup"},
+  spaghetti:{n:"Jollof spaghetti",k:170,p:4.5,c:28,f:4.5,fb:1.5,s:2,na:320},
+  salad:{n:"Vegetable salad",k:60,p:1.5,c:7,f:3,fb:2.2,s:3.5,na:120},
+  coleslaw:{n:"Coleslaw (with mayonnaise)",k:150,p:1,c:9,f:12,fb:1.8,s:6,na:200},
+  bread:{n:"White bread",k:265,p:9,c:49,f:3.2,fb:2.7,s:5,na:490},
+  pap:{n:"Pap / ogi",k:60,p:1,c:13,f:.4,fb:.5,s:.5,na:5},
+  oats:{n:"Oatmeal (cooked)",k:71,p:2.5,c:12,f:1.5,fb:1.7,s:.3,na:4},
+  attieke:{n:"Attiéké",k:160,p:1,c:38,f:.3,fb:1.8,s:0,na:10},
+  waakye:{n:"Waakye",k:170,p:6,c:30,f:2,fb:4,s:.5,na:200,img:"waakye"},
+  attassi:{n:"Attassi (rice & beans)",k:165,p:6,c:29,f:2,fb:4,s:.5,na:200},
+  banku:{n:"Banku",k:140,p:2,c:31,f:.6,fb:1.5,s:0,na:150,img:"banku"},
+  redred:{n:"Red red (beans & plantain)",k:185,p:7,c:24,f:7,fb:6,s:6,na:250,img:"red-red"},
+  lightsoup:{n:"Light soup",k:45,p:5,c:3,f:1.5,fb:.8,s:1.5,na:400},
+  ugali:{n:"Ugali",k:120,p:2.5,c:26,f:.5,fb:1.5,s:0,na:5},
+  githeri:{n:"Githeri (maize & beans)",k:135,p:6,c:22,f:2,fb:5,s:1,na:150},
+  banana:{n:"Banana",k:89,p:1.1,c:23,f:.3,fb:2.6,s:12,na:1},
+  orange:{n:"Orange",k:47,p:.9,c:12,f:.1,fb:2.4,s:9,na:0},
+  watermelon:{n:"Watermelon",k:30,p:.6,c:7.6,f:.2,fb:.4,s:6,na:1},
+  softdrink:{n:"Soft drink",k:42,p:0,c:10.6,f:0,fb:0,s:10.6,na:4},
+  groundnuts:{n:"Roasted groundnuts",k:585,p:24,c:21,f:50,fb:8,s:4,na:6}
+};
+/* Ingredients for planning: nutrients per 100 g as bought; price per gram in Lagos (naira).
+   Prices: Lagos State price tracker & Lagos market surveys, Oct 2026; others are Meuro estimates (est). */
+const INGR={
+  rice:{n:"Rice (local)",k:360,p:7,c:79,f:.6,fb:1.3,s:.1,na:5,ppg:1.1,unit:"kg",src:"Lagos tracker"},
+  beans:{n:"Beans (brown/oloyin)",k:336,p:23.5,c:60,f:1.3,fb:10.6,s:6.9,na:16,ppg:1.8,unit:"kg",src:"est"},
+  garri:{n:"Garri",k:360,p:1.2,c:86,f:.5,fb:2,s:0,na:20,ppg:.6,unit:"kg",src:"est"},
+  yam:{n:"Yam",k:118,p:1.5,c:28,f:.2,fb:4.1,s:.5,na:9,ppg:1.25,unit:"tuber ≈2 kg",src:"Lagos tracker"},
+  elubo:{n:"Yam flour (elubo)",k:330,p:3,c:80,f:.5,fb:4,s:0,na:10,ppg:2.5,unit:"kg",src:"est"},
+  plantain:{n:"Plantain",k:122,p:1.3,c:32,f:.4,fb:2.3,s:15,na:4,ppg:2,unit:"finger ≈200 g",src:"national avg"},
+  sweetpotato:{n:"Sweet potato",k:86,p:1.6,c:20,f:.1,fb:3,s:4.2,na:55,ppg:1.2,unit:"kg",src:"est"},
+  spaghetti:{n:"Spaghetti",k:371,p:13,c:75,f:1.5,fb:3.2,s:2.7,na:6,ppg:2.2,unit:"500 g pack",src:"est"},
+  oats:{n:"Oats",k:389,p:16.9,c:66,f:6.9,fb:10.6,s:1,na:2,ppg:6,unit:"500 g",src:"est"},
+  bread:{n:"Bread (wholewheat)",k:247,p:13,c:41,f:3.4,fb:7,s:6,na:450,ppg:3.4,unit:"loaf ≈500 g",src:"est"},
+  maizeflour:{n:"Maize/corn flour (ogi)",k:365,p:9,c:76,f:4.7,fb:7,s:.6,na:35,ppg:1.4,unit:"kg",src:"est"},
+  eggs:{n:"Eggs",k:143,p:12.6,c:.7,f:9.5,fb:0,s:.4,na:142,ppg:3.6,unit:"6 eggs ≈300 g",src:"Lagos tracker"},
+  chicken:{n:"Chicken",k:215,p:18.6,c:0,f:15,fb:0,s:0,na:70,ppg:6.5,unit:"kg",src:"est"},
+  beef:{n:"Beef",k:180,p:20,c:0,f:11,fb:0,s:0,na:60,ppg:8,unit:"kg",src:"est"},
+  fish:{n:"Fresh fish (mackerel)",k:205,p:18.6,c:0,f:13.9,fb:0,s:0,na:90,ppg:6,unit:"kg",src:"Lagos guide"},
+  sardines:{n:"Sardines (tin)",k:208,p:24.6,c:0,f:11.5,fb:0,s:0,na:307,ppg:9.6,unit:"125 g tin",src:"est"},
+  crayfish:{n:"Crayfish (dried)",k:330,p:63,c:2,f:6,fb:0,s:0,na:900,ppg:20,unit:"cup ≈60 g",src:"national avg"},
+  groundnuts:{n:"Groundnuts",k:567,p:25.8,c:16,f:49,fb:8.5,s:4,na:18,ppg:5.5,unit:"cup ≈145 g",src:"est"},
+  egusi:{n:"Egusi (ground melon seed)",k:557,p:28,c:15,f:47,fb:4,s:1,na:10,ppg:12.5,unit:"cup ≈120 g",src:"est"},
+  tomatoes:{n:"Tomatoes",k:18,p:.9,c:3.9,f:.2,fb:1.2,s:2.6,na:5,ppg:2,unit:"kg",src:"Lagos tracker"},
+  tatashe:{n:"Red bell pepper (tatashe)",k:31,p:1,c:6,f:.3,fb:2.1,s:4.2,na:4,ppg:2.5,unit:"kg",src:"Lagos tracker"},
+  pepper:{n:"Scotch bonnet (rodo)",k:40,p:1.9,c:8.8,f:.4,fb:1.5,s:5,na:9,ppg:2,unit:"small plate ≈250 g",src:"Lagos survey"},
+  onions:{n:"Onions",k:40,p:1.1,c:9.3,f:.1,fb:1.7,s:4.2,na:4,ppg:.9,unit:"kg",src:"Lagos tracker"},
+  ugu:{n:"Ugu / spinach (efo)",k:30,p:3,c:4,f:.5,fb:2.5,s:.5,na:30,ppg:2,unit:"bunch ≈250 g",src:"est"},
+  okra:{n:"Okra",k:33,p:1.9,c:7.5,f:.2,fb:3.2,s:1.5,na:7,ppg:4,unit:"heap ≈250 g",src:"est"},
+  carrots:{n:"Carrots",k:41,p:.9,c:9.6,f:.2,fb:2.8,s:4.7,na:69,ppg:1.5,unit:"kg",src:"est"},
+  cabbage:{n:"Cabbage",k:25,p:1.3,c:5.8,f:.1,fb:2.5,s:3.2,na:18,ppg:1.3,unit:"head ≈900 g",src:"est"},
+  cucumber:{n:"Cucumber",k:15,p:.7,c:3.6,f:.1,fb:.5,s:1.7,na:2,ppg:1.5,unit:"piece ≈300 g",src:"est"},
+  avocado:{n:"Avocado",k:160,p:2,c:8.5,f:14.7,fb:6.7,s:.7,na:7,ppg:3.5,unit:"piece ≈200 g",src:"est"},
+  banana:{n:"Banana",k:89,p:1.1,c:23,f:.3,fb:2.6,s:12,na:1,ppg:1.2,unit:"piece ≈120 g",src:"est"},
+  orange:{n:"Orange",k:47,p:.9,c:12,f:.1,fb:2.4,s:9,na:0,ppg:1.3,unit:"piece ≈150 g",src:"est"},
+  vegoil:{n:"Vegetable oil",k:884,p:0,c:0,f:100,fb:0,s:0,na:0,ppg:2.9,unit:"75 cl",src:"national avg"},
+  palmoil:{n:"Palm oil",k:884,p:0,c:0,f:100,fb:0,s:0,na:0,ppg:2.2,unit:"75 cl",src:"national avg"},
+  milkpowder:{n:"Milk powder",k:496,p:26,c:38,f:27,fb:0,s:38,na:371,ppg:8,unit:"400 g",src:"est"},
+  salt:{n:"Salt",k:0,p:0,c:0,f:0,fb:0,s:0,na:38758,ppg:.3,unit:"pack",src:"est"},
+  cubes:{n:"Seasoning cubes",k:250,p:10,c:20,f:15,fb:0,s:5,na:24000,ppg:12,unit:"pack",src:"est"}
+};
+const NUTS=["k","p","c","f","fb","s","na"];
+const NUT_LABEL={k:"kcal",p:"Protein",c:"Carbs",f:"Fat",fb:"Fibre",s:"Sugar",na:"Sodium"};
+const CONDITIONS=[["hypertension","High blood pressure"],["diabetes","Diabetes"],["weight","Obesity / weight management"],["heart","Heart condition"],["kidney","Kidney condition"],["allergy","Food allergy"]];
+const GOALS=[["lose","Lose weight"],["healthy","Eat healthier"],["balance","Better nutritional balance"],["condition","Manage a health condition"],["muscle","Build muscle"],["energy","More energy"],["maintain","Maintain my health"]];
+const ACT=[["sedentary","Mostly sitting",1.2],["light","Light (walks, 1–3 workouts/week)",1.375],["moderate","Moderate (3–5 workouts/week)",1.55],["active","Very active (daily training or physical work)",1.725]];
+const SLOTS=["breakfast","lunch","dinner","snack"];
+const SLOT_LABEL={breakfast:"Breakfast",lunch:"Lunch",dinner:"Dinner",snack:"Snack"};
+
+/* ---------------- tiny helpers ---------------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const naira=n=>"₦"+Math.round(n||0).toLocaleString("en-NG");
+const r0=n=>Math.round(n||0);
+const r1=n=>Math.round((n||0)*10)/10;
+const todayKey=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const dayLabel=k=>{const d=new Date(k+"T12:00:00");return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});};
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2600);}
+function sumN(list){const o={k:0,p:0,c:0,f:0,fb:0,s:0,na:0};list.forEach(x=>NUTS.forEach(n=>o[n]+=(x[n]||0)));return o;}
+function nutFor(per100,g){const o={};NUTS.forEach(n=>o[n]=(per100[n]||0)*g/100);return o;}
+function strip(a){const o=Object.assign({},a);delete o.id;return o;}
+function initials(n){return String(n||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";}
+const ICON={
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>',
+  plan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6"/></svg>',
+  scan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>',
+  diary:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11M9 8h6"/></svg>',
+  ask:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h6M9 13h3"/></svg>',
+  pros:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0M12 14v4M10 16h4"/></svg>',
+  profile:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 18.5a7 7 0 0111 0"/></svg>',
+  admin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'
+};
+
+/* ---------------- state ---------------- */
+const S={uid:null,me:null,isOwner:false,canEdit:false,db:null,sample:null,user:null,
+  profile:null,diary:[],plan:null,chat:[],chatSave:true,pros:[],myApp:null,myConsult:null,apps:[],consults:[],
+  view:"home",ob:{step:0,data:{}},scan:null,busy:{},dbOk:false};
+function setView(v){S.view=v;try{localStorage.setItem("meuro.view",v);}catch(e){}render();window.scrollTo(0,0);}
+
+/* ---------------- targets (the personalised nutrition profile) ---------------- */
+function ageOf(p){if(p.age)return +p.age;return 30;}
+function targets(p){
+  if(!p)return null;
+  const w=+p.weight||70,h=+p.height||170,a=ageOf(p);
+  const bmr=10*w+6.25*h-5*a+(p.sex==="female"?-161:p.sex==="male"?5:-78);
+  const act=(ACT.find(x=>x[0]===p.activity)||ACT[1])[2];
+  let kcal=bmr*act;
+  const g=p.goals||[];
+  if(g.includes("lose"))kcal-=Math.min(500,kcal*.18);
+  if(g.includes("muscle"))kcal+=250;
+  kcal=Math.max(p.sex==="female"?1300:1500,Math.round(kcal/10)*10);
+  const protPerKg=g.includes("muscle")?1.5:(g.includes("lose")?1.2:1.0);
+  let prot=Math.round(w*protPerKg);
+  const cond=p.conditions||[];
+  const kidney=cond.includes("kidney");
+  if(kidney)prot=Math.round(w*.8);
+  const fat=Math.round(kcal*.3/9);
+  const carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
+  const sodium=cond.includes("hypertension")||cond.includes("heart")||kidney?1500:2000;
+  const sugar=Math.round(kcal*.1/4);
+  const bmi=w/((h/100)**2);
+  const review=cond.some(c=>["diabetes","kidney","heart"].includes(c))||p.meds==="yes"||p.doctorDiet==="yes";
+  return {k:kcal,p:prot,c:carb,f:fat,fb:p.sex==="female"?25:30,s:sugar,na:sodium,bmi:r1(bmi),bmr:Math.round(bmr),review};
+}
+function bmiLabel(b){return b<18.5?"below the healthy range":b<25?"in the healthy range":b<30?"above the healthy range":"well above the healthy range";}
+function profileText(p){
+  const t=targets(p);const cond=(p.conditions||[]).map(c=>(CONDITIONS.find(x=>x[0]===c)||[c,c])[1]).concat(p.otherCondition?[p.otherCondition]:[]);
+  return [
+    `Name: ${p.name}. Age: ${ageOf(p)}. Sex: ${p.sex||"not given"}. Location: ${p.city||""} ${p.country||""}.`,
+    `Height ${p.height} cm, weight ${p.weight} kg (BMI ${t.bmi}, ${bmiLabel(t.bmi)}).`,
+    `Health conditions: ${cond.length?cond.join(", "):"none reported"}. Prescribed medication: ${p.meds||"not said"}. Following a doctor's diet: ${p.doctorDiet||"not said"}.`,
+    `Allergies/intolerances: ${p.allergies||"none"}. Dietary pattern: ${p.diet||"no restriction"}.`,
+    `Goals: ${(p.goals||[]).map(g=>(GOALS.find(x=>x[0]===g)||[g,g])[1]).join(", ")||"healthy eating"}.`,
+    `Likes: ${p.likes||"-"}. Dislikes: ${p.dislikes||"-"}. Cuisines: ${p.cuisines||"Nigerian"}.`,
+    `Food budget: ${naira(p.budget)} per ${p.budgetPeriod||"week"} (≈ ${naira(dailyBudget(p))} per day) for ${p.people||1} person(s). Shops at: ${p.shopsAt||"market"}.`,
+    `Activity: ${(ACT.find(x=>x[0]===p.activity)||ACT[1])[1]}. Meals per day: ${p.mealsPerDay||3}. Cooks: ${p.cooking||"sometimes"}.`,
+    `Daily guide targets (estimates): ${t.k} kcal, protein ${t.p} g, carbs ${t.c} g, fat ${t.f} g, fibre ${t.fb} g, sugar under ${t.s} g, sodium under ${t.na} mg.`
+  ].join("\n");
+}
+function dailyBudget(p){const b=+p.budget||0;return p.budgetPeriod==="day"?b:p.budgetPeriod==="month"?b/30:b/7;}
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  const [db,user,sample]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("sample")]).catch(()=>[null,null,null]);
+  S.db=db;S.user=user;S.sample=sample;
+  if(user){try{S.uid=await user.id();S.me=await user.me();S.isOwner=await user.isOwner();S.canEdit=await user.canEdit();}catch(e){}}
+  try{const v=localStorage.getItem("meuro.view");if(v)S.view=v;}catch(e){}
+  if(!db||!S.uid){renderGate();return;}
+  S.dbOk=true;
+  const mine=db.collection("data/users/"+S.uid);
+  let first=true;const timer=setTimeout(()=>{if(first){first=false;render();}},10000);
+  try{
+    const pr=await mine.doc("profile").get();S.profile=pr.exists?pr.data():null;
+    const pl=await mine.doc("plan").get();S.plan=pl.exists?pl.data():null;
+    const ch=await mine.doc("chat").get();if(ch.exists){S.chat=(ch.data().turns||[]).slice();S.chatSave=ch.data().save!==false;}
+  }catch(e){}
+  clearTimeout(timer);first=false;
+  mine.where("kind","==","diary").onSnapshot(snap=>{S.diary=snap.docs.map(d=>Object.assign({id:d.id},d.data()));if(S.profile)render();},()=>{});
+  db.collection("pros").onSnapshot(snap=>{S.pros=snap.docs.map(d=>Object.assign({id:d.id},d.data()));if(S.view==="pros"||S.view==="home")render();},()=>{});
+  db.doc("applications/"+S.uid).onSnapshot(d=>{S.myApp=d.exists?d.data():null;if(S.view==="pros")render();},()=>{});
+  db.doc("consults/"+S.uid).onSnapshot(d=>{S.myConsult=d.exists?d.data():null;if(S.view==="pros")render();},()=>{});
+  if(S.canEdit){
+    db.collection("applications").onSnapshot(s=>{S.apps=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(S.view==="admin")render();},()=>{});
+    db.collection("consults").onSnapshot(s=>{S.consults=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(S.view==="admin")render();},()=>{});
+  }
+  render();
+}
+function renderGate(){
+  $("#root").innerHTML=`<div class="gate"><div class="card"><img src="img/logo.png" alt="Meuro" style="height:30px;width:auto">
+    <h2>Sign in to use Meuro AI</h2><p class="muted">Meuro AI keeps your health profile, meal plans and food diary private to your account. Open this page while signed in to Claude to continue.</p></div></div>`;
+}
+const mineDoc=k=>S.db.collection("data/users/"+S.uid).doc(k);
+
+/* ---------------- render root ---------------- */
+function render(){
+  if(!S.dbOk)return renderGate();
+  if(!S.profile||!S.profile.done||S.editing)return renderOnboarding();
+  const views={home:viewHome,plan:viewPlan,scan:viewScan,diary:viewDiary,ask:viewAsk,pros:viewPros,profile:viewProfile,admin:viewAdmin};
+  if(!views[S.view])S.view="home";
+  if(S.view==="admin"&&!S.canEdit)S.view="home";
+  const nav=[["home","Home"],["plan","Meal plan"],["scan","Scan food"],["diary","Diary"],["ask","Ask Meuro"],["pros","Experts"],["profile","My profile"]].concat(S.canEdit?[["admin","Admin"]]:[]);
+  const navBtn=([k,l],cls)=>`<button class="navbtn ${cls||""}" data-nav="${k}" ${S.view===k?'aria-current="page"':""}>${ICON[k]}<span>${l}</span></button>`;
+  $("#root").innerHTML=`<div class="app">
+    <aside class="rail"><div class="brand"><img src="img/logo.png" alt="Meuro"><b>AI</b></div>${nav.map(n=>navBtn(n)).join("")}<div class="spacer"></div><p class="small muted" style="padding:0 10px">Guidance, not a diagnosis. In an emergency, call your local emergency number.</p></aside>
+    <main class="main"><div class="inner">
+      <div class="mobilehead"><div class="brand row" style="gap:8px"><img src="img/logo.png" alt="Meuro" style="height:24px"><b style="font:600 17px var(--f-display);color:var(--green)">AI</b></div>
+        <div class="row" style="gap:8px"><button class="btn btn-ghost btn-sm" data-nav="pros">Experts</button>${S.canEdit?'<button class="btn btn-ghost btn-sm" data-nav="admin">Admin</button>':""}<button class="icon-btn" data-nav="profile" aria-label="My profile">${ICON.profile}</button></div></div>
+      <div id="view"></div>
+    </div></main>
+    <nav class="tabbar" aria-label="Main">${[["home","Home"],["plan","Plan"],["scan","Scan"],["diary","Diary"],["ask","Ask"]].map(n=>navBtn(n,n[0]==="scan"?"scanbtn":"")).join("")}</nav>
+  </div>`;
+  document.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>setView(b.dataset.nav));
+  views[S.view]($("#view"));
+}
+
+/* =====================================================================
+   ONBOARDING
+   ===================================================================== */
+const OB_STEPS=["welcome","about","body","health","goals","food","budget","life","review"];
+function renderOnboarding(){
+  const st=S.ob, d=st.data, step=OB_STEPS[st.step];
+  if(!d.name&&S.me&&S.me.name)d.name=S.me.name;
+  const pct=Math.round(st.step/(OB_STEPS.length-1)*100);
+  const chips=(key,list,multi)=>`<div class="chips" role="group">${list.map(([v,l])=>{const on=multi?(d[key]||[]).includes(v):d[key]===v;return `<button type="button" class="chip" data-chip="${key}" data-v="${v}" data-multi="${multi?1:""}" aria-pressed="${on}">${esc(l)}</button>`;}).join("")}</div>`;
+  const inp=(key,label,type,ph,hint,extra)=>`<label class="field">${label}${hint?` <span class="hint">${hint}</span>`:""}<input class="input" id="ob-${key}" data-k="${key}" type="${type||"text"}" placeholder="${esc(ph||"")}" value="${esc(d[key]||"")}" ${extra||""}></label>`;
+  let body="";
+  if(step==="welcome")body=`<div class="q"><span class="eyebrow">Welcome to Meuro AI</span><h1>Let's get to know you before we plan your food.</h1>
+    <p class="muted">Eight short steps: about 3 minutes. Your answers shape your meal plans, your food scans and what Meuro AI tells you.</p>
+    <div class="note"><b>Your health information stays private.</b> It is stored in your own private space in Meuro, only you can see it, and you can delete it at any time from <i>My profile</i>. Meuro gives nutrition guidance; it does not diagnose or replace your doctor.</div>
+    <label class="row" style="gap:10px;align-items:flex-start;font-weight:500"><input type="checkbox" id="ob-consent" ${d.consent?"checked":""} style="width:20px;height:20px;margin-top:2px"> <span>I agree that Meuro may store my health and food information to personalise my nutrition guidance.</span></label></div>`;
+  if(step==="about")body=`<div class="q"><span class="eyebrow">Step 1 · About you</span><h1>Who are we planning for?</h1>
+    ${inp("name","Full name","text","e.g. Treasure Onwuchekwa")}
+    <div class="grid2">${inp("age","Age","number","e.g. 24",null,'min="13" max="110" inputmode="numeric"')}<label class="field">Sex <span class="hint">used for energy estimates</span>${chips("sex",[["female","Female"],["male","Male"],["na","Prefer not to say"]])}</label></div>
+    <div class="grid2">${inp("city","City","text","e.g. Lagos")}${inp("country","Country","text","e.g. Nigeria")}</div></div>`;
+  if(step==="body")body=`<div class="q"><span class="eyebrow">Step 2 · Your body</span><h1>Height and weight</h1><p class="muted">We use these to estimate how much energy and protein you need each day.</p>
+    <div class="grid2">${inp("height","Height","number","cm, e.g. 168",null,'inputmode="decimal" min="100" max="230"')}${inp("weight","Current weight","number","kg, e.g. 72",null,'inputmode="decimal" min="25" max="300"')}</div></div>`;
+  if(step==="health")body=`<div class="q"><span class="eyebrow">Step 3 · Health</span><h1>Do you have any diagnosed health conditions?</h1><p class="muted">Tick all that apply. Skip if none.</p>
+    ${chips("conditions",CONDITIONS,true)}
+    ${inp("otherCondition","Anything else?","text","e.g. ulcer, PCOS, sickle cell")}
+    ${(d.conditions||[]).includes("allergy")?inp("allergies","Which foods are you allergic to?","text","e.g. groundnuts, shellfish"):""}
+    <label class="field">Are you taking any prescribed medication?${chips("meds",[["yes","Yes"],["no","No"]])}</label>
+    <label class="field">Are you following a diet your doctor gave you?${chips("doctorDiet",[["yes","Yes"],["no","No"]])}</label>
+    ${(d.meds==="yes"||d.doctorDiet==="yes")?'<div class="note warn">Thanks. Meuro will keep its suggestions in line with your doctor\'s advice and will suggest a professional review of your plan. Never stop or change medication because of an app.</div>':""}</div>`;
+  if(step==="goals")body=`<div class="q"><span class="eyebrow">Step 4 · Goals</span><h1>What do you want food to do for you?</h1><p class="muted">Pick one or more.</p>${chips("goals",GOALS,true)}</div>`;
+  if(step==="food")body=`<div class="q"><span class="eyebrow">Step 5 · Food you love</span><h1>Your food preferences</h1>
+    ${inp("likes","Favourite foods","text","e.g. jollof, beans, plantain, egusi")}
+    ${inp("dislikes","Foods you avoid or dislike","text","e.g. okra, pork")}
+    ${(d.conditions||[]).includes("allergy")?"":inp("allergies","Allergies or intolerances","text","e.g. lactose, groundnuts")}
+    <label class="field">Dietary pattern${chips("diet",[["none","No restriction"],["vegetarian","Vegetarian"],["vegan","Vegan"],["pescatarian","Fish but no meat"],["halal","Halal"]])}</label>
+    ${inp("cuisines","Cuisines you enjoy","text","e.g. Nigerian, Ghanaian, Continental")}</div>`;
+  if(step==="budget")body=`<div class="q"><span class="eyebrow">Step 6 · Budget</span><h1>How much can you spend on food?</h1><p class="muted">Meuro plans meals that fit this amount, using current Lagos market prices.</p>
+    <label class="field">Budget per${chips("budgetPeriod",[["day","Day"],["week","Week"],["month","Month"]])}</label>
+    ${inp("budget","Amount (₦)","number","e.g. 15000",null,'inputmode="numeric" min="500"')}
+    ${inp("people","How many people does this budget feed?","number","1",null,'inputmode="numeric" min="1" max="12"')}
+    <label class="field">Where do you usually buy food?${chips("shopsAt",[["market","Open market"],["supermarket","Supermarket"],["buka","Bukas / restaurants"],["mixed","A mix"]])}</label>
+    ${d.budget?`<p class="small muted">That is about <b class="tnum">${naira(dailyBudget(d)/(+d.people||1))}</b> per person per day.</p>`:""}</div>`;
+  if(step==="life")body=`<div class="q"><span class="eyebrow">Step 7 · Lifestyle</span><h1>How does a normal day look?</h1>
+    <label class="field">Activity level${chips("activity",ACT.map(a=>[a[0],a[1]]))}</label>
+    <label class="field">Meals per day${chips("mealsPerDay",[["2","2"],["3","3"],["4","3 + snack"]])}</label>
+    <label class="field">Do you cook?${chips("cooking",[["daily","I cook most days"],["sometimes","Sometimes"],["rarely","I mostly buy food"]])}</label>
+    ${inp("routine","Typical routine (optional)","text","e.g. lectures 8–4, gym in the evening")}</div>`;
+  if(step==="review"){const t=targets(Object.assign({},d));
+    body=`<div class="q"><span class="eyebrow">Your Meuro nutrition profile</span><h1>Here is your starting point, ${esc((d.name||"").split(" ")[0])}.</h1>
+      <div class="grid3">
+        <div class="card flat"><div class="small muted">Daily energy guide</div><div style="font:600 28px var(--f-display)" class="tnum">${t.k} kcal</div><div class="small muted">BMR ${t.bmr} × activity</div></div>
+        <div class="card flat"><div class="small muted">Protein guide</div><div style="font:600 28px var(--f-display)" class="tnum">${t.p} g</div><div class="small muted">per day</div></div>
+        <div class="card flat"><div class="small muted">Sodium limit</div><div style="font:600 28px var(--f-display)" class="tnum">${t.na} mg</div><div class="small muted">${t.na<2000?"lower, because of your health answers":"WHO guide"}</div></div>
+      </div>
+      <p class="muted">BMI ${t.bmi} (${bmiLabel(t.bmi)}). Carbs about ${t.c} g, fat about ${t.f} g, fibre ${t.fb} g, sugar under ${t.s} g a day. Budget about ${naira(dailyBudget(d))} a day.</p>
+      ${t.review?'<div class="note warn"><b>We recommend a professional review.</b> Because of your health answers, ask a registered dietitian or your doctor to check your plan. You can request one from <i>Experts</i>.</div>':""}
+      <p class="small muted">These are estimates from standard formulas (Mifflin–St Jeor energy equation, WHO sodium and sugar guidance), not a prescription.</p></div>`;}
+  $("#root").innerHTML=`<div class="ob"><div class="ob-card">
+    <div class="row between"><img src="img/logo.png" alt="Meuro" style="height:26px;width:auto"><span class="small muted tnum">${st.step===0?"":`Step ${Math.min(st.step,7)} of 7`}</span></div>
+    <div class="progress" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    <div class="card" style="display:grid;gap:22px">${body}
+      <p class="err" id="ob-err" role="alert"></p>
+      <div class="ob-foot">${st.step>0?'<button class="btn btn-ghost" id="ob-back">Back</button>':"<span></span>"}<button class="btn btn-primary" id="ob-next">${step==="review"?"Save and open my dashboard":st.step===0?"Start":"Continue"}</button></div>
+    </div></div></div>`;
+  document.querySelectorAll("[data-k]").forEach(i=>i.oninput=()=>{d[i.dataset.k]=i.value;if(i.dataset.k==="budget"||i.dataset.k==="people"){/* live hint */}});
+  document.querySelectorAll("[data-chip]").forEach(b=>b.onclick=()=>{const k=b.dataset.chip,v=b.dataset.v;
+    document.querySelectorAll("[data-k]").forEach(i=>d[i.dataset.k]=i.value);
+    if(b.dataset.multi){const a=new Set(d[k]||[]);a.has(v)?a.delete(v):a.add(v);d[k]=[...a];}else d[k]=v;renderOnboarding();});
+  const c=$("#ob-consent");if(c)c.onchange=()=>d.consent=c.checked;
+  const back=$("#ob-back");if(back)back.onclick=()=>{document.querySelectorAll("[data-k]").forEach(i=>d[i.dataset.k]=i.value);st.step--;renderOnboarding();};
+  $("#ob-next").onclick=async()=>{
+    document.querySelectorAll("[data-k]").forEach(i=>d[i.dataset.k]=i.value.trim());
+    const e=m=>{$("#ob-err").textContent=m;};
+    if(step==="welcome"&&!d.consent)return e("Please tick the box to continue. Meuro needs your permission to store health information.");
+    if(step==="about"){if(!d.name||d.name.length<2)return e("Add your name.");if(!(+d.age>=13&&+d.age<=110))return e("Add your age (13 or older).");if(!d.sex)return e("Choose an option for sex.");}
+    if(step==="body"){if(!(+d.height>=100&&+d.height<=230))return e("Add your height in centimetres, e.g. 168.");if(!(+d.weight>=25&&+d.weight<=300))return e("Add your weight in kilograms, e.g. 72.");}
+    if(step==="health"){if(!d.meds||!d.doctorDiet)return e("Answer the two questions about medication and your doctor's diet.");}
+    if(step==="goals"&&!(d.goals||[]).length)return e("Pick at least one goal.");
+    if(step==="budget"){if(!d.budgetPeriod)return e("Choose day, week or month.");if(!(+d.budget>=300))return e("Add a budget in naira, e.g. 15000.");d.people=String(Math.max(1,Math.min(12,+d.people||1)));if(!d.shopsAt)d.shopsAt="market";}
+    if(step==="life"){if(!d.activity)return e("Choose your activity level.");if(!d.mealsPerDay)d.mealsPerDay="3";if(!d.cooking)d.cooking="sometimes";}
+    if(step==="review"){
+      const btn=$("#ob-next");btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Saving';
+      const p=Object.assign({},d,{done:true,createdAt:new Date().toISOString(),diet:d.diet||"none"});
+      try{if(S.profile&&S.profile.favs)p.favs=S.profile.favs;await mineDoc("profile").set(p);S.profile=p;S.editing=false;S.view="home";toast("Profile saved");render();}
+      catch(x){btn.disabled=false;btn.textContent="Save and open my dashboard";e("Could not save your profile. Check your connection and try again.");}
+      return;}
+    st.step++;renderOnboarding();window.scrollTo(0,0);
+  };
+}
+
+/* =====================================================================
+   DASHBOARD
+   ===================================================================== */
+function diaryFor(day){return S.diary.filter(x=>x.day===day);}
+function ring(val,max,size,color,label,sub){
+  const r=size/2-9,c=2*Math.PI*r,pct=Math.max(0,Math.min(1,val/(max||1)));
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="${esc(label)} ${r0(val)} of ${r0(max)}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="12"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct)}" transform="rotate(-90 ${size/2} ${size/2})"/>
+    <text x="50%" y="47%" text-anchor="middle" font-family="var(--f-display)" font-size="${size/6}" font-weight="600" fill="var(--ink)">${r0(val).toLocaleString()}</text>
+    <text x="50%" y="62%" text-anchor="middle" font-size="12" fill="var(--muted)">${esc(sub)}</text></svg>`;
+}
+function macroBars(tot,t){
+  return [["p","Protein","var(--prot)","g"],["c","Carbs","var(--carb)","g"],["f","Fat","var(--fat)","g"],["fb","Fibre","var(--fibre)","g"],["na","Sodium","var(--orange)","mg"]].map(([k,l,col,u])=>{
+    const over=k==="na"?tot[k]>t[k]:false;const pct=Math.min(100,tot[k]/(t[k]||1)*100);
+    return `<div class="macro"><div class="row between small"><b>${l}</b><span class="tnum ${over?"err":"muted"}">${r0(tot[k])} / ${t[k]} ${u}${k==="na"?" max":""}</span></div><div class="bar"><i style="width:${pct}%;background:${over?"var(--bad)":col}"></i></div></div>`;}).join("");
+}
+function weekChart(t){
+  const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return todayKey(d);});
+  const vals=days.map(k=>sumN(diaryFor(k)).k);
+  const W=560,H=190,pad=34,max=Math.max(t.k*1.25,...vals,100),bw=(W-pad*2)/7*.56;
+  const y=v=>H-26-(v/max)*(H-50);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calories each day this week">`;
+  [0,.5,1].forEach(f=>{const v=Math.round(max*f/100)*100;s+=`<line x1="${pad}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pad-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`;});
+  s+=`<line x1="${pad}" x2="${W-8}" y1="${y(t.k)}" y2="${y(t.k)}" stroke="var(--orange)" stroke-dasharray="5 5"/><text x="${W-8}" y="${y(t.k)-6}" text-anchor="end" font-size="11" fill="var(--orange)">guide ${t.k}</text>`;
+  days.forEach((k,i)=>{const x=pad+(W-pad*2)/7*(i+.5)-bw/2,v=vals[i];
+    s+=`<rect x="${x}" y="${y(v)}" width="${bw}" height="${Math.max(0,H-26-y(v))}" rx="6" fill="${k===todayKey()?"var(--green)":"color-mix(in srgb,var(--green) 45%,var(--surface-2))"}"/>`;
+    s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${new Date(k+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short"})}</text>`;
+    if(v)s+=`<text x="${x+bw/2}" y="${y(v)-6}" text-anchor="middle" font-size="11" fill="var(--ink)">${r0(v)}</text>`;});
+  return s+"</svg>";
+}
+function viewHome(el){
+  const p=S.profile,t=targets(p),today=diaryFor(todayKey()),tot=sumN(today);
+  const hour=new Date().getHours(),greet=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const planDay=S.plan&&S.plan.days&&S.plan.days[0];
+  const spentToday=today.reduce((a,x)=>a+(x.cost||0),0);
+  el.innerHTML=`<div class="inner" style="max-width:none">
+    <div class="hello row between"><div><p class="muted">${greet},</p><h1>${esc(p.name.split(" ")[0])}</h1></div>
+      <div class="row">${(p.conditions||[]).map(c=>`<span class="pill">${esc((CONDITIONS.find(x=>x[0]===c)||[c,c])[1])}</span>`).join("")}${(p.goals||[]).slice(0,2).map(g=>`<span class="pill ok">${esc((GOALS.find(x=>x[0]===g)||[g,g])[1])}</span>`).join("")}</div></div>
+    <button class="bigscan" data-nav="scan"><div style="display:grid;gap:2px"><b>Scan your meal</b><span>Snap or upload a photo. Meuro AI estimates what is on the plate.</span></div><span class="ico">${ICON.cam}</span></button>
+    <div class="grid2">
+      <section class="card" aria-labelledby="h-today"><div class="sec-title"><h2 id="h-today">Today</h2><span class="small muted">${today.length} meal${today.length===1?"":"s"} logged</span></div>
+        <div class="rings" style="margin-top:14px">${ring(tot.k,t.k,150,"var(--green)","Calories","of "+t.k+" kcal")}<div style="display:grid;gap:12px;min-width:0;width:100%">${macroBars(tot,t)}</div></div>
+        ${!today.length?'<p class="small muted" style="margin-top:12px">Nothing logged yet today. Scan a meal or add it from your plan.</p>':""}
+      </section>
+      <section class="card" aria-labelledby="h-plan"><div class="sec-title"><h2 id="h-plan">Today's plan</h2><button class="btn-link" data-nav="plan">${planDay?"Open plan":"Create plan"}</button></div>
+        ${planDay?planDay.meals.slice(0,4).map(m=>`<div class="meal">${mealThumb(m)}<div class="body"><span class="slot">${esc(SLOT_LABEL[m.slot]||m.slot)}</span><h4>${esc(m.name)}</h4><div class="kv"><span><b class="tnum">${r0(m.nut.k)}</b> kcal</span><span><b class="tnum">${r0(m.nut.p)} g</b> protein</span><span><b class="tnum">${naira(m.cost)}</b></span></div></div></div>`).join(""):
+        `<div class="empty"><p>No meal plan yet. Meuro AI builds one around your health profile and your ${naira(p.budget)} ${p.budgetPeriod} budget.</p><button class="btn btn-primary btn-sm" data-nav="plan">Plan my meals</button></div>`}
+      </section>
+    </div>
+    <section class="card chart" aria-labelledby="h-week"><div class="sec-title"><h2 id="h-week">This week</h2><span class="small muted">calories logged per day</span></div>${weekChart(t)}</section>
+    <div class="grid3">
+      <section class="card"><span class="eyebrow">Budget</span><div style="font:600 26px var(--f-display);margin-top:6px" class="tnum">${naira(dailyBudget(p))}<span class="small muted"> / day</span></div>
+        <p class="small muted">${S.plan?`Plan costs ${naira(S.plan.dayCostAvg)} a day for ${p.people} ${+p.people===1?"person":"people"}.`:"Create a plan to see what your meals cost."} ${spentToday?`Logged today: ${naira(spentToday)}.`:""}</p></section>
+      <section class="card"><span class="eyebrow">Ask Meuro AI</span><p style="margin:8px 0 12px">"What can I eat for breakfast on my budget?"</p><button class="btn btn-ghost btn-sm" data-nav="ask">Ask a question</button></section>
+      <section class="card"><span class="eyebrow">Talk to an expert</span><p style="margin:8px 0 12px">${S.pros.length?`${S.pros.length} verified professional${S.pros.length===1?"":"s"} available.`:"Request a consultation with a verified dietitian or doctor."}</p><button class="btn btn-ghost btn-sm" data-nav="pros">See experts</button></section>
+    </div>
+    ${t.review?'<div class="note warn">Your health answers mean a registered dietitian or doctor should review your meal plan. <button class="btn-link" data-nav="pros">Request a review</button></div>':""}
+  </div>`;
+  el.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>setView(b.dataset.nav));
+}
+function mealThumb(m){const d=m.dishKey&&DISHES[m.dishKey];return d&&d.img?`<img class="thumb" src="img/${d.img}.webp" alt="">`:`<div class="thumb" style="display:grid;place-items:center;color:var(--green);font:600 18px var(--f-display)">${esc(initials(m.name))}</div>`;}
+
+/* =====================================================================
+   MEAL PLANNER — Claude composes meals from the ingredient table; the page
+   computes cost and nutrients from that table and enforces the budget.
+   ===================================================================== */
+function ingrTable(){return Object.entries(INGR).map(([k,v])=>`${k} | ${v.n} | ₦${v.ppg}/g | per100g: ${v.k}kcal P${v.p} C${v.c} F${v.f} fibre${v.fb} Na${v.na}mg`).join("\n");}
+function costMeal(m,people){
+  const items=(m.ingredients||[]).filter(x=>INGR[x.key]&&+x.grams>0);
+  const nut=sumN(items.map(x=>nutFor(INGR[x.key],+x.grams)));
+  const cost=items.reduce((a,x)=>a+INGR[x.key].ppg*(+x.grams),0)*people;
+  return {nut,cost,items};
+}
+function finishPlan(raw,days,p){
+  const people=+p.people||1;
+  const outDays=(raw.days||[]).slice(0,days).map((d,i)=>{const meals=(d.meals||[]).map(m=>{const c=costMeal(m,people);return Object.assign({},m,{ingredients:c.items,nut:c.nut,cost:c.cost,dishKey:DISHES[m.dishKey]?m.dishKey:null});});
+    return {label:d.label||("Day "+(i+1)),meals,cost:meals.reduce((a,m)=>a+m.cost,0),nut:sumN(meals.map(m=>m.nut))};});
+  const total=outDays.reduce((a,d)=>a+d.cost,0);
+  const budgetForPeriod=dailyBudget(p)*outDays.length;
+  return {days:outDays,total,dayCostAvg:total/(outDays.length||1),budgetForPeriod,within:total<=budgetForPeriod*1.001,createdAt:new Date().toISOString(),note:raw.note||""};
+}
+async function makePlan(days,feedback){
+  const p=S.profile,t=targets(p),people=+p.people||1;
+  const perDay=dailyBudget(p);
+  const prompt=`You are Meuro AI's meal planner, an evidence-based nutrition assistant for African households. Build a practical ${days}-day meal plan.
+
+USER PROFILE
+${profileText(p)}
+
+HARD RULES
+- Use ONLY ingredient keys from the table below, with grams PER PERSON (raw, as bought). The app computes cost and nutrients from these grams, so be realistic about portions.
+- Daily food cost for ${people} person(s) = sum(grams × price per gram) × ${people}. It MUST be at most ₦${Math.round(perDay)} per day. Aim for 85–100% of it. Cheaper is fine; over budget is not.
+- ${p.mealsPerDay==="2"?"2 meals a day (brunch and dinner, use slots lunch and dinner)":p.mealsPerDay==="4"?"breakfast, lunch, dinner and one snack":"breakfast, lunch and dinner"}.
+- Respect allergies, dislikes, dietary pattern and health conditions. Hypertension/heart/kidney: little salt, no seasoning cubes, limit sodium to ${t.na} mg/day. Diabetes: favour fibre, beans, vegetables, controlled starch portions, no sugary drinks. Kidney: moderate protein.
+- Aim near ${t.k} kcal and ${t.p} g protein per person per day.
+- Use Nigerian/West African meals the user would actually eat (${p.likes||"local favourites"}), with variety across days. Use 5–20 g oil per person per meal at most.
+- If dishKey matches the meal, set it from this list, else null: ${Object.keys(DISHES).join(", ")}.
+- Never claim food cures or treats disease.${feedback?"\n- "+feedback:""}
+
+INGREDIENT TABLE (key | name | price | nutrients)
+${ingrTable()}
+
+Return ONLY JSON:
+{"days":[{"label":"Day 1","meals":[{"slot":"breakfast|lunch|dinner|snack","name":"string","dishKey":"string|null","ingredients":[{"key":"rice","grams":90}],"steps":["short step", "..."],"why":"one sentence on why this suits the user"}]}],"note":"one sentence about the plan"}`;
+  const raw=await S.sample.json(prompt,{modelTier:"default",cache:false});
+  return finishPlan(raw,days,p);
+}
+function viewPlan(el){
+  const p=S.profile,pl=S.plan,t=targets(p);
+  const busy=S.busy.plan;
+  el.innerHTML=`<div style="display:grid;gap:18px">
+    <div class="sec-title"><div><span class="eyebrow">Intelligent meal planner</span><h2 style="font-size:28px;margin-top:4px">Your meal plan</h2></div>
+      <div class="row"><button class="btn btn-primary" id="mk1" ${busy?"disabled":""}>${busy==="1"?'<span class="spinner"></span> Planning…':"Plan today"}</button><button class="btn btn-ghost" id="mk7" ${busy?"disabled":""}>${busy==="7"?'<span class="spinner"></span> Planning a week…':"Plan 7 days"}</button></div></div>
+    <div class="card flat row between" style="gap:16px"><div><div class="small muted">Budget</div><b class="tnum">${naira(p.budget)} per ${esc(p.budgetPeriod)}</b> <span class="small muted">≈ ${naira(dailyBudget(p))}/day · ${p.people} ${+p.people===1?"person":"people"}</span></div>
+      <div class="row" style="gap:8px"><label class="small muted" for="bud">Adjust</label><input id="bud" class="input tnum" type="number" inputmode="numeric" value="${esc(p.budget)}" style="width:130px;height:40px"><select id="budp" class="input" style="width:110px;height:40px">${["day","week","month"].map(x=>`<option value="${x}" ${p.budgetPeriod===x?"selected":""}>per ${x}</option>`).join("")}</select><button class="btn btn-ghost btn-sm" id="budsave">Save</button></div></div>
+    ${busy?`<div class="note"><span class="spinner" style="color:var(--green)"></span> Meuro AI is choosing meals from Lagos market prices, your health profile and your budget. This usually takes 30–90 seconds.</div>`:""}
+    <p class="err" id="plan-err" role="alert">${esc(S.planErr||"")}</p>
+    ${pl?planBody(pl,p,t):`<div class="empty"><h3>No plan yet</h3><p>Meuro AI uses your health profile, food likes, budget and current Lagos market prices to plan meals you can actually cook.</p></div>`}
+  </div>`;
+  $("#mk1").onclick=()=>runPlan(1);$("#mk7").onclick=()=>runPlan(7);
+  $("#budsave").onclick=async()=>{const b=+$("#bud").value;if(!(b>=300))return toast("Enter a budget of at least ₦300");S.profile.budget=String(b);S.profile.budgetPeriod=$("#budp").value;await mineDoc("profile").set(S.profile);toast("Budget updated. Plan again to use it.");render();};
+  el.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>swapMeal(+b.dataset.d,+b.dataset.m));
+  el.querySelectorAll("[data-log]").forEach(b=>b.onclick=()=>logPlanMeal(+b.dataset.d,+b.dataset.m));
+  el.querySelectorAll("[data-fav]").forEach(b=>b.onclick=()=>favMeal(+b.dataset.d,+b.dataset.m));
+  const fit=$("#fit");if(fit)fit.onclick=()=>runPlan(pl.days.length,`The previous plan cost ₦${Math.round(pl.total)} for ${pl.days.length} day(s), over the ₦${Math.round(pl.budgetForPeriod)} budget. Cut cost by at least ${Math.ceil((pl.total-pl.budgetForPeriod)/pl.budgetForPeriod*100)+5}% using cheaper staples (beans, garri, eggs, seasonal vegetables, smaller meat portions).`);
+}
+async function runPlan(days,feedback){
+  if(!S.sample){S.planErr="Meuro AI is not available in this view.";return render();}
+  S.busy.plan=String(days);S.planErr="";render();
+  try{const pl=await makePlan(days,feedback);
+    if(!pl.days.length)throw {code:"empty"};
+    if(!pl.within&&!feedback){S.busy.plan=String(days);render();const again=await makePlan(days,`Your first attempt cost ₦${Math.round(pl.total)}, above the ₦${Math.round(pl.budgetForPeriod)} limit. Reduce quantities of the most expensive ingredients so the total fits.`);if(again.total<pl.total)Object.assign(pl,again);}
+    S.plan=pl;await mineDoc("plan").set(JSON.parse(JSON.stringify(pl)));toast(pl.within?"Plan ready, within budget":"Plan ready, but over budget");}
+  catch(e){S.planErr=e&&e.code==="not_granted"?"Meuro AI needs your permission to plan. Allow it when asked.":e&&e.code==="rate_limited"?"Meuro AI is busy. Wait a minute and try again.":"Meuro AI could not build a plan this time. Try again.";}
+  S.busy.plan=null;render();
+}
+function planBody(pl,p,t){
+  const over=!pl.within;
+  const shop={};pl.days.forEach(d=>d.meals.forEach(m=>m.ingredients.forEach(x=>{shop[x.key]=(shop[x.key]||0)+(+x.grams)*(+p.people||1);})));
+  const shopRows=Object.entries(shop).sort((a,b)=>INGR[b[0]].ppg*b[1]-INGR[a[0]].ppg*a[1]).map(([k,g])=>`<tr><td>${esc(INGR[k].n)}</td><td class="num tnum">${g>=1000?r1(g/1000)+" kg":r0(g)+" g"}</td><td class="num tnum">${naira(INGR[k].ppg*g)}</td><td class="muted small">${esc(INGR[k].src)}</td></tr>`).join("");
+  return `<div class="card ${over?"":"flat"}" style="display:grid;gap:10px;${over?"border-color:var(--bad)":""}">
+      <div class="row between"><div><div class="small muted">Estimated cost · ${pl.days.length} day${pl.days.length>1?"s":""} · ${p.people} ${+p.people===1?"person":"people"}</div><div style="font:600 28px var(--f-display)" class="tnum">${naira(pl.total)} <span class="small muted">of ${naira(pl.budgetForPeriod)}</span></div></div>
+      <span class="pill ${over?"bad":"ok"}">${over?"Over budget by "+naira(pl.total-pl.budgetForPeriod):"Within budget"}</span></div>
+      ${over?`<p class="small">This plan costs more than your budget. <button class="btn-link" id="fit">Fit it to my budget</button></p>`:""}
+      ${pl.note?`<p class="small muted">${esc(pl.note)}</p>`:""}
+      ${t.review?'<p class="small" style="color:var(--orange)">Because of your health answers, have a dietitian or doctor review this plan before you follow it.</p>':""}</div>
+    ${pl.days.map((d,di)=>`<section class="card"><div class="sec-title"><h3>${esc(d.label)}</h3><span class="small muted tnum">${r0(d.nut.k)} kcal · ${r0(d.nut.p)} g protein · ${r0(d.nut.na)} mg sodium · ${naira(d.cost)}</span></div>
+      ${d.meals.map((m,mi)=>`<div class="meal">${mealThumb(m)}<div class="body"><span class="slot">${esc(SLOT_LABEL[m.slot]||m.slot)}</span><h4>${esc(m.name)}</h4>
+        <div class="kv"><span><b class="tnum">${r0(m.nut.k)}</b> kcal</span><span>P <b class="tnum">${r0(m.nut.p)}g</b></span><span>C <b class="tnum">${r0(m.nut.c)}g</b></span><span>F <b class="tnum">${r0(m.nut.f)}g</b></span><span>Fibre <b class="tnum">${r1(m.nut.fb)}g</b></span><span>Na <b class="tnum">${r0(m.nut.na)}mg</b></span><span><b class="tnum">${naira(m.cost)}</b></span></div>
+        ${m.why?`<p class="small muted">${esc(m.why)}</p>`:""}
+        <details class="more"><summary>Ingredients & steps</summary><ul class="small" style="margin:8px 0;padding-left:18px">${m.ingredients.map(x=>`<li>${esc(INGR[x.key].n)}: <span class="tnum">${r0(x.grams)} g</span> per person</li>`).join("")}</ul>${(m.steps||[]).length?`<ol class="small" style="margin:0;padding-left:18px">${m.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:""}</details>
+        <div class="row" style="gap:8px;margin-top:6px"><button class="btn btn-ghost btn-sm" data-log data-d="${di}" data-m="${mi}">I ate this</button><button class="btn btn-ghost btn-sm" data-swap data-d="${di}" data-m="${mi}" ${S.busy.swap?"disabled":""}>${S.busy.swap===di+"-"+mi?'<span class="spinner"></span>':"Replace"}</button><button class="btn btn-ghost btn-sm" data-fav data-d="${di}" data-m="${mi}">${(S.profile.favs||[]).some(f=>f.name===m.name)?"Saved ★":"Save ☆"}</button></div>
+      </div></div>`).join("")}</section>`).join("")}
+    <section class="card"><div class="sec-title"><h3>Shopping list</h3><span class="small muted">Lagos market prices, Oct 2026 · "est" = Meuro estimate</span></div>
+      <div class="scroll-x"><table class="t"><thead><tr><th>Item</th><th class="num">Amount</th><th class="num">Cost</th><th>Price source</th></tr></thead><tbody>${shopRows}</tbody></table></div></section>
+    <p class="small muted">${esc(SOURCE_NOTE)}</p>`;
+}
+async function swapMeal(di,mi){
+  const p=S.profile,pl=S.plan,m=pl.days[di].meals[mi];
+  const others=pl.days[di].meals.filter((_,i)=>i!==mi).reduce((a,x)=>a+x.cost,0);
+  const left=Math.max(200,dailyBudget(p)-others);
+  S.busy.swap=di+"-"+mi;render();
+  try{const raw=await S.sample.json(`You are Meuro AI's meal planner. Replace this ${m.slot} ("${m.name}") with a different, practical meal.
+USER PROFILE
+${profileText(p)}
+Rules: use ONLY these ingredient keys with grams per person; cost for ${p.people} person(s) must be ≤ ₦${Math.round(left)}; respect health conditions and dislikes; dishKey from [${Object.keys(DISHES).join(", ")}] or null.
+INGREDIENTS
+${ingrTable()}
+Return ONLY JSON: {"slot":"${m.slot}","name":"","dishKey":null,"ingredients":[{"key":"","grams":0}],"steps":[""],"why":""}`,{modelTier:"default",cache:false});
+    const c=costMeal(raw,+p.people||1);
+    pl.days[di].meals[mi]=Object.assign({},raw,{slot:m.slot,ingredients:c.items,nut:c.nut,cost:c.cost,dishKey:DISHES[raw.dishKey]?raw.dishKey:null});
+    const d=pl.days[di];d.cost=d.meals.reduce((a,x)=>a+x.cost,0);d.nut=sumN(d.meals.map(x=>x.nut));
+    pl.total=pl.days.reduce((a,x)=>a+x.cost,0);pl.dayCostAvg=pl.total/pl.days.length;pl.within=pl.total<=pl.budgetForPeriod*1.001;
+    await mineDoc("plan").set(JSON.parse(JSON.stringify(pl)));toast("Meal replaced");}
+  catch(e){toast("Could not replace the meal. Try again.");}
+  S.busy.swap=null;render();
+}
+async function logPlanMeal(di,mi){
+  const m=S.plan.days[di].meals[mi];const people=+S.profile.people||1;
+  const entry={kind:"diary",day:todayKey(),slot:m.slot,name:m.name,source:"plan",dishKey:m.dishKey||null,
+    items:m.ingredients.map(x=>({name:INGR[x.key].n,grams:+x.grams})),nut:m.nut,cost:m.cost/people,createdAt:new Date().toISOString()};
+  await S.db.collection("data/users/"+S.uid).add(entry);toast("Added to today's diary");
+}
+async function favMeal(di,mi){
+  const m=S.plan.days[di].meals[mi];const favs=(S.profile.favs||[]).slice();
+  const i=favs.findIndex(f=>f.name===m.name);if(i>=0)favs.splice(i,1);else favs.push({name:m.name,slot:m.slot});
+  S.profile.favs=favs;await mineDoc("profile").set(S.profile);render();toast(i>=0?"Removed from favourites":"Saved to favourites");
+}
+
+/* =====================================================================
+   FOOD SCANNER — Claude (vision) identifies foods and portions; nutrients
+   come from the Meuro food table. Unknown foods carry Claude's estimate,
+   clearly marked.
+   ===================================================================== */
+function viewScan(el){
+  const sc=S.scan;
+  el.innerHTML=`<div style="display:grid;gap:18px">
+    <div><span class="eyebrow">AI food scanner</span><h2 style="font-size:28px;margin-top:4px">What's on your plate?</h2><p class="muted">Take a photo or upload one. Meuro AI identifies the food and estimates portions; you can correct anything before saving.</p></div>
+    <div class="scanwrap">
+      <div style="display:grid;gap:12px">
+        <label class="drop ${sc&&sc.url?"has":""}" id="drop" for="file">${sc&&sc.url?`<img src="${sc.url}" alt="Your meal photo">`:`<div style="display:grid;gap:10px;justify-items:center;color:var(--muted)">${ICON.cam}<b style="color:var(--ink)">Take or upload a photo</b><span class="small">JPG or PNG · on a phone this opens your camera</span></div>`}</label>
+        <input type="file" id="file" accept="image/*" capture="environment" hidden>
+        <div class="row"><button class="btn btn-primary" id="analyse" ${!(sc&&sc.blob)||S.busy.scan?"disabled":""}>${S.busy.scan?'<span class="spinner"></span> Analysing…':"Analyse with Meuro AI"}</button>${sc&&sc.url?'<button class="btn btn-ghost" id="reset">New photo</button>':""}</div>
+        ${S.busy.scan?'<div class="note">Looking at the photo and matching foods to the Meuro African food table. Usually 10–40 seconds.</div>':""}
+        <p class="err" role="alert">${esc(sc&&sc.err||"")}</p>
+      </div>
+      <div>${sc&&sc.result?scanResult(sc):`<div class="card flat" style="display:grid;gap:10px"><h3>How it works</h3><ol class="small muted" style="margin:0;padding-left:18px;display:grid;gap:6px"><li>Meuro AI looks at your photo and lists each food it sees, with an estimated portion in grams and how sure it is.</li><li>Nutrients come from the Meuro African Food Table (FAO/INFOODS West Africa and USDA data), not from guesses.</li><li>You correct the food or portion, then save it to your diary.</li></ol><p class="small muted">A photo cannot show cooking oil, salt or exact weight, so every value is an estimate.</p></div>`}</div>
+    </div></div>`;
+  const file=$("#file"),drop=$("#drop");
+  file.onchange=()=>{if(file.files[0])setScanFile(file.files[0]);};
+  ["dragover","dragenter"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add("drag");}));
+  ["dragleave","drop"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove("drag");}));
+  drop.addEventListener("drop",ev=>{const f=ev.dataTransfer.files[0];if(f)setScanFile(f);});
+  const a=$("#analyse");if(a)a.onclick=analyse;
+  const rs=$("#reset");if(rs)rs.onclick=()=>{S.scan=null;render();};
+  if(sc&&sc.result)bindScanResult(el);
+}
+function setScanFile(f){
+  if(!/^image\//.test(f.type)){S.scan={err:"That file is not an image. Choose a JPG or PNG photo."};return render();}
+  if(S.scan&&S.scan.url)URL.revokeObjectURL(S.scan.url);
+  S.scan={blob:f,url:URL.createObjectURL(f)};render();
+}
+async function analyse(){
+  const sc=S.scan;if(!sc||!sc.blob)return;
+  if(!S.sample){sc.err="Meuro AI is not available in this view.";return render();}
+  const lim=await S.sample.limits().catch(()=>null);
+  if(!lim||!lim.images){sc.err="Photo analysis is not available in this view.";return render();}
+  S.busy.scan=true;sc.err="";render();
+  const keys=Object.entries(DISHES).map(([k,v])=>`${k}: ${v.n}`).join("; ");
+  const prompt=`You are Meuro AI's food recognition step. The image is a photo of a meal the user is about to eat (often Nigerian/West African).
+List every distinct food component you can see. For each: the best matching key from this food table (or null if none fits), a short name, the estimated cooked weight in grams on the plate (use plate size, spoon or hand for scale), and your confidence 0–1. If the key is null, also give your own per-100 g estimate.
+Food table keys: ${keys}
+If the photo does not show food, return {"isFood":false}.
+Return ONLY JSON: {"isFood":true,"meal":"short name for the whole plate","items":[{"key":"jollof","name":"Jollof rice","grams":250,"confidence":0.8,"per100":null}],"notes":"what you could not tell, e.g. amount of oil","overall":0.7}
+per100 when key is null: {"k":0,"p":0,"c":0,"f":0,"fb":0,"s":0,"na":0}`;
+  try{
+    const res=await S.sample.json(prompt,{images:[sc.blob],modelTier:"default"});
+    if(!res||res.isFood===false){sc.err="Meuro AI could not find food in this photo. Try a clearer photo of the plate.";}
+    else{sc.result={meal:res.meal||"My meal",notes:res.notes||"",overall:+res.overall||.6,
+      items:(res.items||[]).map(x=>({key:DISHES[x.key]?x.key:null,name:x.name||(DISHES[x.key]||{}).n||"Food",grams:Math.max(5,Math.round(+x.grams||100)),confidence:Math.max(0,Math.min(1,+x.confidence||.5)),per100:x.per100||null}))};
+      sc.slot=guessSlot();}
+  }catch(e){sc.err=e&&e.code==="not_granted"?"Allow Meuro AI to look at photos when asked, then try again.":e&&e.code==="rate_limited"?"Meuro AI is busy. Wait a minute and try again.":"The analysis did not finish. Try again.";}
+  S.busy.scan=false;render();
+}
+function guessSlot(){const h=new Date().getHours();return h<11?"breakfast":h<16?"lunch":h<21?"dinner":"snack";}
+function itemNut(x){const per=x.key?DISHES[x.key]:(x.per100||{});return nutFor(per,x.grams);}
+function scanResult(sc){
+  const r=sc.result,tot=sumN(r.items.map(itemNut)),t=targets(S.profile);
+  const opts=k=>`<option value="">Other (AI estimate)</option>`+Object.entries(DISHES).map(([kk,v])=>`<option value="${kk}" ${kk===k?"selected":""}>${esc(v.n)}</option>`).join("");
+  const flags=[];if(tot.na>t.na*.5)flags.push(`High in sodium for one meal (${r0(tot.na)} mg of your ${t.na} mg daily limit).`);
+  if(tot.s>t.s*.5)flags.push("A lot of sugar for one meal.");if(tot.fb<4)flags.push("Low in fibre: add vegetables, beans or fruit.");
+  return `<div class="card" style="display:grid;gap:14px">
+    <div class="row between"><div><span class="eyebrow">Meuro AI analysis</span><h3 style="margin-top:4px"><input class="input" id="mealname" value="${esc(r.meal)}" style="height:40px;font:600 18px var(--f-display)"></h3></div>
+      <span class="conf" title="How sure Meuro AI is overall">Confidence <i><b style="width:${r0(r.overall*100)}%"></b></i> ${r0(r.overall*100)}%</span></div>
+    <div>${r.items.map((x,i)=>`<div class="item-row"><div style="display:grid;gap:4px;min-width:0"><select class="input" data-key="${i}" style="height:38px">${opts(x.key)}</select>
+        <span class="small muted">${x.key?"":"AI estimate · "}${esc(x.name)} · <span class="conf"><i><b style="width:${r0(x.confidence*100)}%"></b></i>${r0(x.confidence*100)}% sure</span> · ${r0(itemNut(x).k)} kcal</span></div>
+      <label class="grams"><input class="input tnum" type="number" inputmode="numeric" data-g="${i}" value="${x.grams}" min="5" max="2000" aria-label="Grams of ${esc(x.name)}"><span class="small muted">g</span></label>
+      <button class="icon-btn" data-del="${i}" aria-label="Remove ${esc(x.name)}">${ICON.trash}</button></div>`).join("")}
+      <div class="row" style="margin-top:10px;gap:8px"><select class="input" id="addkey" style="height:38px;flex:1;min-width:160px">${Object.entries(DISHES).map(([k,v])=>`<option value="${k}">${esc(v.n)}</option>`).join("")}</select><button class="btn btn-ghost btn-sm" id="additem">Add missing food</button></div></div>
+    <div class="grid3" style="gap:10px;grid-template-columns:repeat(3,minmax(0,1fr))">${["k","p","c","f","fb","na"].map(n=>`<div class="card flat" style="padding:12px"><div class="small muted">${NUT_LABEL[n]}</div><b class="tnum" style="font-size:20px">${n==="k"?r0(tot.k):n==="na"?r0(tot.na)+" mg":r1(tot[n])+" g"}</b></div>`).join("")}</div>
+    <p class="small muted">Sugar ≈ ${r1(tot.s)} g. ${esc(r.notes)}</p>
+    ${flags.length?`<div class="note warn small">${flags.map(esc).join("<br>")}</div>`:""}
+    <div class="row"><label class="small muted" for="slot">Save as</label><select id="slot" class="input" style="width:150px;height:42px">${SLOTS.map(s=>`<option value="${s}" ${sc.slot===s?"selected":""}>${SLOT_LABEL[s]}</option>`).join("")}</select><button class="btn btn-primary" id="savescan" ${S.busy.save?"disabled":""}>Confirm and save to diary</button></div>
+    <p class="small muted">Estimates, not laboratory measurements. ${esc(SOURCE_NOTE)}</p></div>`;
+}
+function bindScanResult(el){
+  const r=S.scan.result;
+  el.querySelectorAll("[data-key]").forEach(s=>s.onchange=()=>{const x=r.items[+s.dataset.key];x.key=s.value||null;if(x.key)x.name=DISHES[x.key].n;render();});
+  el.querySelectorAll("[data-g]").forEach(s=>s.onchange=()=>{r.items[+s.dataset.g].grams=Math.max(5,Math.min(2000,+s.value||0));render();});
+  el.querySelectorAll("[data-del]").forEach(s=>s.onclick=()=>{r.items.splice(+s.dataset.del,1);render();});
+  $("#additem").onclick=()=>{const k=$("#addkey").value;r.items.push({key:k,name:DISHES[k].n,grams:100,confidence:1,per100:null});render();};
+  $("#mealname").onchange=e=>r.meal=e.target.value;
+  $("#slot").onchange=e=>S.scan.slot=e.target.value;
+  $("#savescan").onclick=async()=>{
+    if(!r.items.length)return toast("Add at least one food");
+    S.busy.save=true;
+    try{const thumb=await thumbOf(S.scan.blob);
+      await S.db.collection("data/users/"+S.uid).add({kind:"diary",day:todayKey(),slot:S.scan.slot||guessSlot(),name:r.meal,source:"scan",thumb,
+        items:r.items.map(x=>({name:x.name,key:x.key,grams:x.grams,confidence:x.confidence,estimate:!x.key})),nut:sumN(r.items.map(itemNut)),confidence:r.overall,createdAt:new Date().toISOString()});
+      S.scan=null;S.busy.save=false;toast("Saved to your diary");setView("diary");}
+    catch(e){S.busy.save=false;toast("Could not save. Try again.");}
+  };
+}
+function thumbOf(blob){return new Promise(res=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas"),s=160,sc=Math.max(s/img.width,s/img.height);c.width=s;c.height=s;const x=c.getContext("2d");x.drawImage(img,(s-img.width*sc)/2,(s-img.height*sc)/2,img.width*sc,img.height*sc);res(c.toDataURL("image/jpeg",.72));};img.onerror=()=>res(null);img.src=URL.createObjectURL(blob);});}
+
+/* =====================================================================
+   DIARY & TRACKER
+   ===================================================================== */
+function viewDiary(el){
+  S.diaryDay=S.diaryDay||todayKey();
+  const day=S.diaryDay,list=diaryFor(day).sort((a,b)=>SLOTS.indexOf(a.slot)-SLOTS.indexOf(b.slot)),tot=sumN(list.map(x=>x.nut)),t=targets(S.profile);
+  const range=S.diaryRange||"week";
+  const nDays=range==="month"?30:7;
+  const days=[...Array(nDays)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-nDays+1+i);return todayKey(d);});
+  const avg=sumN(days.map(k=>sumN(diaryFor(k).map(x=>x.nut))));const logged=days.filter(k=>diaryFor(k).length).length||1;
+  NUTS.forEach(n=>avg[n]/=logged);
+  el.innerHTML=`<div style="display:grid;gap:18px">
+    <div class="sec-title"><div><span class="eyebrow">Food diary</span><h2 style="font-size:28px;margin-top:4px">${day===todayKey()?"Today":esc(dayLabel(day))}</h2></div>
+      <div class="row"><button class="icon-btn" id="prevd" aria-label="Previous day">‹</button><input type="date" class="input" id="pickd" value="${day}" style="width:170px;height:40px"><button class="icon-btn" id="nextd" aria-label="Next day">›</button></div></div>
+    <section class="card"><div class="rings">${ring(tot.k,t.k,140,"var(--green)","Calories","of "+t.k+" kcal")}<div style="display:grid;gap:12px;width:100%;min-width:0">${macroBars(tot,t)}</div></div></section>
+    ${SLOTS.map(s=>{const items=list.filter(x=>x.slot===s);return `<section class="card"><div class="sec-title"><h3>${SLOT_LABEL[s]}</h3><button class="btn-link" data-add="${s}">+ Add food</button></div>
+      ${items.length?items.map(x=>`<div class="meal">${x.thumb?`<img class="thumb" src="${x.thumb}" alt="">`:mealThumb(x)}<div class="body"><h4>${esc(x.name)}</h4>
+        <div class="kv"><span><b class="tnum">${r0(x.nut.k)}</b> kcal</span><span>P <b class="tnum">${r0(x.nut.p)}g</b></span><span>C <b class="tnum">${r0(x.nut.c)}g</b></span><span>F <b class="tnum">${r0(x.nut.f)}g</b></span><span>Na <b class="tnum">${r0(x.nut.na)}mg</b></span><span class="pill">${x.source==="scan"?"Scanned":x.source==="plan"?"From plan":"Added"}</span></div>
+        <p class="small muted">${(x.items||[]).map(i=>esc(i.name)+" "+r0(i.grams)+" g").join(" · ")}</p></div>
+        <div class="row" style="gap:6px"><button class="icon-btn" data-edit="${x.id}" aria-label="Edit ${esc(x.name)}">✎</button><button class="icon-btn" data-rm="${x.id}" aria-label="Delete ${esc(x.name)}">${ICON.trash}</button></div></div>`).join(""):`<p class="small muted">Nothing logged.</p>`}</section>`;}).join("")}
+    <section class="card chart"><div class="sec-title"><h3>Trends</h3><div class="chips">${["week","month"].map(r=>`<button class="chip" data-range="${r}" aria-pressed="${range===r}">${r==="week"?"7 days":"30 days"}</button>`).join("")}</div></div>
+      ${trendChart(days,t)}
+      <p class="small muted">Average on days you logged (${logged}): <b class="tnum">${r0(avg.k)}</b> kcal, <b class="tnum">${r0(avg.p)} g</b> protein, <b class="tnum">${r1(avg.fb)} g</b> fibre, <b class="tnum">${r0(avg.na)} mg</b> sodium${avg.na>t.na?' <span class="pill bad">above your sodium limit</span>':""}${avg.fb<t.fb*.6?' <span class="pill warn">low fibre</span>':""}.</p></section>
+  </div>`;
+  const shift=n=>{const d=new Date(day+"T12:00:00");d.setDate(d.getDate()+n);S.diaryDay=todayKey(d);render();};
+  $("#prevd").onclick=()=>shift(-1);$("#nextd").onclick=()=>shift(1);$("#pickd").onchange=e=>{if(e.target.value){S.diaryDay=e.target.value;render();}};
+  el.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{S.diaryRange=b.dataset.range;render();});
+  el.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{if(b.dataset.confirm){await S.db.collection("data/users/"+S.uid).doc(b.dataset.rm).delete();toast("Entry deleted");}else{b.dataset.confirm=1;b.style.color="var(--bad)";b.setAttribute("aria-label","Tap again to delete");toast("Tap the bin again to delete");}});
+  el.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>openAdd(b.dataset.add));
+  el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openAdd(null,S.diary.find(x=>x.id===b.dataset.edit)));
+}
+function trendChart(days,t){
+  const W=600,H=200,pad=36;const vals=days.map(k=>sumN(diaryFor(k).map(x=>x.nut)));
+  const maxK=Math.max(t.k*1.3,...vals.map(v=>v.k),100);
+  const x=i=>pad+(W-pad-10)*(days.length===1?0:i/(days.length-1)),y=v=>H-24-(v/maxK)*(H-44);
+  const pts=vals.map((v,i)=>`${x(i)},${y(v.k)}`).join(" ");
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calories per day">`;
+  [0,.5,1].forEach(f=>{const v=Math.round(maxK*f/100)*100;s+=`<line x1="${pad}" x2="${W-10}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pad-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="var(--muted)">${v}</text>`;});
+  s+=`<line x1="${pad}" x2="${W-10}" y1="${y(t.k)}" y2="${y(t.k)}" stroke="var(--orange)" stroke-dasharray="5 5"/>`;
+  s+=`<polygon points="${x(0)},${H-24} ${pts} ${x(days.length-1)},${H-24}" fill="color-mix(in srgb,var(--green) 16%,transparent)"/><polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  vals.forEach((v,i)=>{if(v.k)s+=`<circle cx="${x(i)}" cy="${y(v.k)}" r="3.5" fill="var(--green)"/>`;});
+  const step=days.length>10?7:1;days.forEach((k,i)=>{if(i%step===0||i===days.length-1)s+=`<text x="${x(i)}" y="${H-6}" font-size="11" text-anchor="middle" fill="var(--muted)">${new Date(k+"T12:00:00").toLocaleDateString("en-GB",days.length>10?{day:"numeric",month:"short"}:{weekday:"short"})}</text>`;});
+  return s+"</svg>";
+}
+function openAdd(slot,entry){
+  const m=document.createElement("div");m.className="modal";
+  const items=entry?(entry.items||[]).map(i=>({key:i.key||Object.keys(DISHES).find(k=>DISHES[k].n===i.name)||"jollof",grams:i.grams})):[{key:"jollof",grams:250}];
+  const draw=()=>{m.innerHTML=`<div class="card" role="dialog" aria-modal="true" aria-labelledby="addh" style="display:grid;gap:14px"><h3 id="addh">${entry?"Edit entry":"Add food to "+SLOT_LABEL[slot]}</h3>
+    ${items.map((it,i)=>`<div class="row" style="gap:8px"><select class="input" data-ak="${i}" style="flex:1;min-width:150px;height:42px">${Object.entries(DISHES).map(([k,v])=>`<option value="${k}" ${k===it.key?"selected":""}>${esc(v.n)}</option>`).join("")}</select><input class="input tnum" data-ag="${i}" type="number" inputmode="numeric" value="${it.grams}" style="width:100px;height:42px" aria-label="grams"><span class="small muted">g</span><button class="icon-btn" data-ar="${i}" aria-label="Remove">${ICON.trash}</button></div>`).join("")}
+    <button class="btn-link" id="amore" style="justify-self:start">+ Another food</button>
+    <p class="small muted">Total ≈ ${r0(sumN(items.map(it=>nutFor(DISHES[it.key],it.grams))).k)} kcal · values from the Meuro food table</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" id="acancel">Cancel</button><button class="btn btn-primary" id="asave">Save</button></div></div>`;
+    m.querySelectorAll("[data-ak]").forEach(s=>s.onchange=()=>{items[+s.dataset.ak].key=s.value;draw();});
+    m.querySelectorAll("[data-ag]").forEach(s=>s.onchange=()=>{items[+s.dataset.ag].grams=Math.max(1,+s.value||0);draw();});
+    m.querySelectorAll("[data-ar]").forEach(s=>s.onclick=()=>{items.splice(+s.dataset.ar,1);if(!items.length)items.push({key:"jollof",grams:200});draw();});
+    m.querySelector("#amore").onclick=()=>{items.push({key:"chicken",grams:100});draw();};
+    m.querySelector("#acancel").onclick=()=>m.remove();
+    m.querySelector("#asave").onclick=async()=>{
+      const doc={kind:"diary",day:entry?entry.day:S.diaryDay||todayKey(),slot:entry?entry.slot:slot,name:items.map(i=>DISHES[i.key].n).join(" + "),source:entry?entry.source:"manual",
+        items:items.map(i=>({name:DISHES[i.key].n,key:i.key,grams:i.grams})),nut:sumN(items.map(i=>nutFor(DISHES[i.key],i.grams))),createdAt:entry?entry.createdAt:new Date().toISOString()};
+      if(entry&&entry.thumb)doc.thumb=entry.thumb;
+      try{if(entry)await S.db.collection("data/users/"+S.uid).doc(entry.id).set(doc);else await S.db.collection("data/users/"+S.uid).add(doc);m.remove();toast("Saved");}catch(e){toast("Could not save. Try again.");}
+    };};
+  draw();document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)m.remove();});
+}
+
+/* =====================================================================
+   MEURO AI ASSISTANT — every question carries the user's profile, today's
+   diary and current plan.
+   ===================================================================== */
+function assistantRules(){
+  const p=S.profile,t=targets(p),today=diaryFor(todayKey()),tot=sumN(today.map(x=>x.nut));
+  const week=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);const k=todayKey(d);const s=sumN(diaryFor(k).map(x=>x.nut));return `${k}: ${r0(s.k)} kcal, P${r0(s.p)} C${r0(s.c)} F${r0(s.f)} fibre${r1(s.fb)} Na${r0(s.na)}mg (${diaryFor(k).map(x=>x.name).join("; ")||"nothing logged"})`;}).join("\n");
+  const plan=S.plan?S.plan.days.map(d=>d.label+": "+d.meals.map(m=>`${m.slot} ${m.name} (${r0(m.nut.k)} kcal, ${naira(m.cost)})`).join("; ")).join("\n"):"No plan yet.";
+  return `You are Meuro AI, a warm, evidence-based nutrition assistant inside the Meuro app, built for African users. Answer in plain, friendly English (short paragraphs or short lists, no markdown headings), use local foods and naira prices, and explain WHY you recommend something.
+Safety: you give nutrition information, not medical care. Never diagnose, never prescribe or tell someone to stop or change medication, never claim food cures disease. If the user mentions emergency symptoms (chest pain, trouble breathing, fainting, very high or low blood sugar symptoms, signs of stroke, severe allergic reaction), tell them to get emergency medical care immediately. For complex medical diets (kidney disease, insulin use, pregnancy complications) recommend a registered dietitian or doctor and mention the Experts tab.
+Typical Lagos prices (Oct 2026): rice ₦1,100/kg, beans ₦1,800/kg, garri ~₦600/kg, eggs ₦1,080 for 6, tomatoes ₦2,000/kg, chicken ~₦6,500/kg, fish ~₦6,000/kg, plantain ₦400 each, ugu ₦500 a bunch.
+USER PROFILE
+${profileText(p)}
+TODAY SO FAR: ${r0(tot.k)} kcal, protein ${r0(tot.p)} g, carbs ${r0(tot.c)} g, fat ${r0(tot.f)} g, fibre ${r1(tot.fb)} g, sodium ${r0(tot.na)} mg.
+LAST 7 DAYS
+${week}
+CURRENT MEAL PLAN
+${plan}`;
+}
+function viewAsk(el){
+  const turns=S.chat;
+  const sug=["What can I eat for breakfast with my budget?","Is my food this week okay for my goals?","Affordable sources of protein in Lagos?","Why might my sodium be high?","Suggest a healthier version of jollof rice"];
+  el.innerHTML=`<div class="card chat"><div style="display:grid;gap:12px;min-height:0">
+      <div class="row between"><div><span class="eyebrow">Meuro AI assistant</span><h2 style="font-size:24px;margin-top:4px">Ask about your food</h2></div>
+        <label class="small row" style="gap:6px"><input type="checkbox" id="savechat" ${S.chatSave?"checked":""}> Save this conversation</label></div>
+      <p class="small muted">Meuro AI sees your profile, your diary for the last 7 days and your meal plan. It gives nutrition guidance, not medical advice.</p>
+      <div class="msgs" id="msgs" aria-live="polite">${turns.length?turns.map(t=>`<div class="msg ${t.role==="user"?"me":"ai"}">${esc(t.content)}</div>`).join(""):`<div class="suggest">${sug.map(s=>`<button class="chip" data-sug="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}</div>
+    </div>
+    <form class="composer" id="ask"><input class="input" id="q" placeholder="Ask Meuro AI…" autocomplete="off" aria-label="Your question"><button class="btn btn-primary" id="send" ${S.busy.ask?"disabled":""}>${S.busy.ask?'<span class="spinner"></span>':"Send"}</button>${turns.length?'<button type="button" class="btn btn-ghost" id="clear">Clear</button>':""}</form></div>`;
+  const msgs=$("#msgs");msgs.scrollTop=msgs.scrollHeight;
+  el.querySelectorAll("[data-sug]").forEach(b=>b.onclick=()=>ask(b.dataset.sug));
+  $("#ask").onsubmit=e=>{e.preventDefault();const q=$("#q").value.trim();if(q)ask(q);};
+  $("#savechat").onchange=async e=>{S.chatSave=e.target.checked;await mineDoc("chat").set({save:S.chatSave,turns:S.chatSave?S.chat.slice(-30):[]});toast(S.chatSave?"Conversation will be saved":"Conversation will not be saved");};
+  const cl=$("#clear");if(cl)cl.onclick=async()=>{S.chat=[];await mineDoc("chat").set({save:S.chatSave,turns:[]});render();};
+}
+async function ask(q){
+  if(S.busy.ask)return;
+  if(!S.sample){toast("Meuro AI is not available in this view.");return;}
+  S.chat.push({role:"user",content:q});S.busy.ask=true;render();
+  const msgs=$("#msgs");const bubble=document.createElement("div");bubble.className="msg ai";bubble.textContent="Thinking…";msgs.appendChild(bubble);msgs.scrollTop=msgs.scrollHeight;
+  const history=S.chat.slice(-12);
+  try{
+    const {text}=await S.sample([{role:"user",content:assistantRules()+"\n\nReply to the conversation that follows."},{role:"assistant",content:"Understood. I'll use your profile, diary and plan, and keep advice safe and practical."},...history],{cache:false,onText:({text})=>{bubble.textContent=text;msgs.scrollTop=msgs.scrollHeight;}});
+    S.chat.push({role:"assistant",content:text});
+    if(S.chatSave)await mineDoc("chat").set({save:true,turns:S.chat.slice(-30)});
+  }catch(e){S.chat.pop();toast(e&&e.code==="not_granted"?"Allow Meuro AI when asked to get answers.":e&&e.code==="rate_limited"?"Meuro AI is busy. Try again in a minute.":"No answer this time. Try again.");}
+  S.busy.ask=false;render();
+}
+
+/* =====================================================================
+   EXPERTS — verified professionals, applications, consultation requests
+   ===================================================================== */
+const PRO_TYPES=[["dietitian","Registered dietitian"],["nutritionist","Nutritionist"],["doctor","Medical doctor"],["specialist","Specialist doctor"]];
+function viewPros(el){
+  const app=S.myApp,cons=(S.myConsult&&S.myConsult.requests)||[];
+  el.innerHTML=`<div style="display:grid;gap:18px">
+    <div><span class="eyebrow">Doctor & nutritionist network</span><h2 style="font-size:28px;margin-top:4px">Talk to a verified expert</h2><p class="muted">Every professional listed here has had their licence checked by the Meuro team.</p></div>
+    ${S.pros.length?`<div class="grid2">${S.pros.map(p=>`<article class="card pro"><div class="row"><span class="avatar">${esc(initials(p.name))}</span><div style="min-width:0"><h3 style="font-size:18px">${esc(p.name)}</h3><div class="small muted">${esc((PRO_TYPES.find(x=>x[0]===p.type)||[0,p.type])[1])} · ${esc(p.years)} yrs · ${esc(p.location||"Online")}</div></div><span class="pill ok" style="margin-left:auto">✓ Verified</span></div>
+      <p class="small">${esc(p.bio||"")}</p><div class="chips">${String(p.specialties||"").split(",").filter(Boolean).map(s=>`<span class="pill">${esc(s.trim())}</span>`).join("")}</div>
+      <div class="row between"><span class="small muted">${p.fee?"From "+naira(p.fee)+" per session":"Fee on request"} · ${esc(p.availability||"")}</span><button class="btn btn-primary btn-sm" data-req="${p.id}">Request consultation</button></div></article>`).join("")}</div>`:
+      `<div class="empty"><h3>Experts are being verified</h3><p>No professional has been approved yet. You can still send a consultation request and the Meuro team will match you with a verified dietitian or doctor.</p><button class="btn btn-primary btn-sm" data-req="">Request a consultation</button></div>`}
+    <section class="card"><div class="sec-title"><h3>My consultations</h3></div>${cons.length?`<div class="scroll-x"><table class="t"><thead><tr><th>Requested</th><th>With</th><th>Reason</th><th>Status</th></tr></thead><tbody>${cons.slice().reverse().map(c=>`<tr><td class="tnum">${esc(new Date(c.at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}))}</td><td>${esc(c.proName||"Meuro to match")}</td><td>${esc(c.reason)}</td><td><span class="pill ${c.status==="scheduled"?"ok":c.status==="declined"?"bad":"warn"}">${esc(c.status==="scheduled"?"Scheduled":c.status==="declined"?"Declined":"Pending")}</span>${c.reply?`<div class="small muted">${esc(c.reply)}</div>`:""}</td></tr>`).join("")}</tbody></table></div>`:'<p class="small muted">No consultation requests yet.</p>'}</section>
+    <section class="card" id="join"><div class="sec-title"><div><span class="eyebrow">For professionals</span><h3 style="margin-top:4px">Apply to become a Meuro health advisor</h3></div>${app?`<span class="pill ${app.status==="approved"?"ok":app.status==="rejected"?"bad":"warn"}">${app.status==="approved"?"Approved":app.status==="rejected"?"Not approved":"Under review"}</span>`:""}</div>
+      ${app?`<p class="small muted">Application from ${esc(app.name)} received ${esc(new Date(app.submittedAt).toLocaleDateString("en-GB"))}. ${app.status==="pending"?"The Meuro team checks your licence before your profile goes live.":app.status==="approved"?"Your profile is live in the expert list.":esc(app.reviewNote||"")}</p><button class="btn btn-ghost btn-sm" id="reapply">Update application</button>`:
+      `<p class="small muted">Doctors, registered dietitians and nutritionists can apply. Your profile only appears after the Meuro team verifies your licence.</p><button class="btn btn-orange" id="apply">Start application</button>`}</section>
+  </div>`;
+  el.querySelectorAll("[data-req]").forEach(b=>b.onclick=()=>openRequest(S.pros.find(p=>p.id===b.dataset.req)||null));
+  const a=$("#apply")||$("#reapply");if(a)a.onclick=()=>openApply(app);
+}
+function openRequest(pro){
+  const m=document.createElement("div");m.className="modal";
+  m.innerHTML=`<form class="card" role="dialog" aria-modal="true" aria-labelledby="rqh" style="display:grid;gap:14px"><h3 id="rqh">Request a consultation${pro?" with "+esc(pro.name):""}</h3>
+    <label class="field">What do you need help with?<textarea class="input" id="rq-reason" required maxlength="600" placeholder="e.g. A meal plan for high blood pressure on ₦15,000 a week"></textarea></label>
+    <label class="field">When are you free?<input class="input" id="rq-when" maxlength="120" placeholder="e.g. Weekday evenings after 6 pm"></label>
+    <label class="field">Session type<select class="input" id="rq-type"><option>Video call</option><option>Phone call</option><option>In person</option></select></label>
+    <label class="field">How should we contact you?<input class="input" id="rq-contact" maxlength="120" placeholder="Email or phone number" value="${esc((S.me&&S.me.email)||"")}"></label>
+    <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="rq-share" checked> Share my Meuro nutrition profile and diary summary with the professional</label>
+    <p class="small muted">This sends a request. The professional confirms a time with you before anything is booked.</p><p class="err" id="rq-err"></p>
+    <div class="row" style="justify-content:flex-end"><button type="button" class="btn btn-ghost" id="rq-cancel">Cancel</button><button class="btn btn-primary" id="rq-send">Send request</button></div></form>`;
+  document.body.appendChild(m);
+  m.querySelector("#rq-cancel").onclick=()=>m.remove();
+  m.querySelector("form").onsubmit=async e=>{e.preventDefault();
+    const reason=m.querySelector("#rq-reason").value.trim();if(reason.length<5){m.querySelector("#rq-err").textContent="Tell the professional a little about what you need.";return;}
+    const share=m.querySelector("#rq-share").checked;
+    const req={id:"r"+Date.now(),at:new Date().toISOString(),proId:pro?pro.id:null,proName:pro?pro.name:null,reason,when:m.querySelector("#rq-when").value.trim(),type:m.querySelector("#rq-type").value,contact:m.querySelector("#rq-contact").value.trim(),status:"pending",
+      summary:share?profileText(S.profile):null,name:S.profile.name};
+    const list=((S.myConsult&&S.myConsult.requests)||[]).concat([req]).slice(-20);
+    try{await S.db.doc("consults/"+S.uid).set({requests:list,updatedAt:new Date().toISOString()});m.remove();toast("Request sent");}
+    catch(x){m.querySelector("#rq-err").textContent="Could not send the request. Try again.";}};
+}
+function openApply(prev){
+  const v=prev||{};const m=document.createElement("div");m.className="modal";
+  const f=(id,l,ph,type,val,extra)=>`<label class="field">${l}<input class="input" id="ap-${id}" type="${type||"text"}" placeholder="${esc(ph||"")}" value="${esc(val||"")}" ${extra||""}></label>`;
+  m.innerHTML=`<form class="card" role="dialog" aria-modal="true" aria-labelledby="aph" style="display:grid;gap:14px"><h3 id="aph">Professional application</h3>
+    ${f("name","Full name","Dr Ada Okafor","text",v.name,"required")}
+    <div class="grid2">${f("email","Professional email","name@clinic.ng","email",v.email,"required")}${f("phone","Phone number","+234…","tel",v.phone,"required")}</div>
+    <label class="field">Profession<select class="input" id="ap-type">${PRO_TYPES.map(([k,l])=>`<option value="${k}" ${v.type===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    ${f("quals","Qualifications","e.g. MBBS (Lagos), RD","text",v.quals,"required")}
+    <div class="grid2">${f("licence","Registration / licence number","e.g. MDCN number","text",v.licence,"required")}${f("years","Years of experience","5","number",v.years,'min="0" max="60" required')}</div>
+    ${f("specialties","Specialisations (comma separated)","Diabetes, Hypertension, Weight management","text",v.specialties)}
+    ${f("location","Location","Lagos · Online","text",v.location)}
+    <div class="grid2">${f("fee","Session fee (₦)","20000","number",v.fee,'min="0"')}${f("availability","Availability","Mon–Fri, 5–8 pm","text",v.availability)}</div>
+    <label class="field">Short professional profile<textarea class="input" id="ap-bio" maxlength="600" placeholder="Your experience and how you help clients">${esc(v.bio||"")}</textarea></label>
+    ${f("docs","Supporting documents","Link to your licence and certificates (Google Drive or Dropbox)","url",v.docs)}
+    <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="ap-ok" required ${prev?"checked":""}> I confirm these details are true and agree that Meuro may verify my licence with the relevant council.</label>
+    <p class="err" id="ap-err"></p>
+    <div class="row" style="justify-content:flex-end"><button type="button" class="btn btn-ghost" id="ap-cancel">Cancel</button><button class="btn btn-orange">Submit for review</button></div></form>`;
+  document.body.appendChild(m);
+  m.querySelector("#ap-cancel").onclick=()=>m.remove();
+  m.querySelector("form").onsubmit=async e=>{e.preventDefault();
+    const g=id=>m.querySelector("#ap-"+id).value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(g("email"))){m.querySelector("#ap-err").textContent="Enter a valid email address.";return;}
+    const docu={name:g("name"),email:g("email"),phone:g("phone"),type:g("type"),quals:g("quals"),licence:g("licence"),years:g("years"),specialties:g("specialties"),location:g("location"),fee:g("fee"),availability:g("availability"),bio:g("bio"),docs:g("docs"),status:"pending",submittedAt:new Date().toISOString()};
+    try{await S.db.doc("applications/"+S.uid).set(docu);m.remove();toast("Application submitted for review");}
+    catch(x){m.querySelector("#ap-err").textContent="Could not submit. Try again.";}};
+}
+
+/* =====================================================================
+   ADMIN (owner / editors only) — review applications and requests
+   ===================================================================== */
+function viewAdmin(el){
+  const pend=S.apps.filter(a=>a.status==="pending"),done=S.apps.filter(a=>a.status!=="pending");
+  const reqs=[];S.consults.forEach(c=>(c.requests||[]).forEach((r,i)=>reqs.push(Object.assign({uid:c.id,idx:i},r))));
+  reqs.sort((a,b)=>b.at.localeCompare(a.at));
+  const appCard=a=>`<article class="card" style="display:grid;gap:8px"><div class="row between"><div><h3 style="font-size:18px">${esc(a.name)}</h3><div class="small muted">${esc((PRO_TYPES.find(x=>x[0]===a.type)||[0,a.type])[1])} · ${esc(a.years)} yrs · ${esc(a.location)}</div></div><span class="pill ${a.status==="approved"?"ok":a.status==="rejected"?"bad":"warn"}">${esc(a.status)}</span></div>
+    <div class="kv"><span>Licence <b>${esc(a.licence)}</b></span><span>${esc(a.quals)}</span><span>${esc(a.email)}</span><span>${esc(a.phone)}</span></div>
+    ${a.docs?`<p class="small">Documents: <a href="${esc(a.docs)}" target="_blank" rel="noopener">${esc(a.docs)}</a></p>`:'<p class="small muted">No documents link.</p>'}
+    <p class="small">${esc(a.bio)}</p>
+    ${a.status==="pending"?`<div class="row"><button class="btn btn-primary btn-sm" data-approve="${a.id}">Licence verified · Approve</button><button class="btn btn-ghost btn-sm" data-reject="${a.id}">Reject</button></div>`:a.status==="approved"?`<button class="btn btn-ghost btn-sm" data-unlist="${a.id}">Remove from directory</button>`:""}</article>`;
+  el.innerHTML=`<div style="display:grid;gap:18px"><div><span class="eyebrow">Admin</span><h2 style="font-size:28px;margin-top:4px">Review queue</h2><p class="muted">Only you and editors of this app can see this page. Check each licence with the professional council before approving.</p></div>
+    <section style="display:grid;gap:12px"><h3>Applications waiting (${pend.length})</h3>${pend.length?pend.map(appCard).join(""):'<p class="small muted">No applications waiting.</p>'}</section>
+    <section class="card"><h3>Consultation requests (${reqs.length})</h3>${reqs.length?`<div class="scroll-x"><table class="t"><thead><tr><th>When</th><th>Patient</th><th>With</th><th>Reason</th><th>Contact</th><th>Status</th></tr></thead><tbody>${reqs.map(r=>`<tr><td class="tnum">${esc(new Date(r.at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}))}</td><td>${esc(r.name||"")}<div class="small muted">${esc(r.type)} · ${esc(r.when||"")}</div></td><td>${esc(r.proName||"Match needed")}</td><td>${esc(r.reason)}${r.summary?`<details class="more"><summary>Shared profile</summary><pre class="small" style="white-space:pre-wrap;margin:6px 0 0">${esc(r.summary)}</pre></details>`:""}</td><td class="small">${esc(r.contact)}</td><td>${r.status==="pending"?`<div style="display:grid;gap:6px"><button class="btn btn-primary btn-sm" data-sched="${r.uid}|${r.id}">Mark scheduled</button><button class="btn btn-ghost btn-sm" data-decline="${r.uid}|${r.id}">Decline</button></div>`:`<span class="pill ${r.status==="scheduled"?"ok":"bad"}">${esc(r.status)}</span>`}</td></tr>`).join("")}</tbody></table></div>`:'<p class="small muted">No requests yet.</p>'}</section>
+    ${done.length?`<section style="display:grid;gap:12px"><h3>Reviewed</h3>${done.map(appCard).join("")}</section>`:""}</div>`;
+  el.querySelectorAll("[data-approve]").forEach(b=>b.onclick=async()=>{const a=S.apps.find(x=>x.id===b.dataset.approve);
+    await S.db.doc("pros/"+a.id).set({name:a.name,type:a.type,years:a.years,location:a.location,specialties:a.specialties,fee:a.fee,availability:a.availability,bio:a.bio,verifiedAt:new Date().toISOString()});
+    await S.db.doc("applications/"+a.id).set(Object.assign(strip(a),{status:"approved",reviewedAt:new Date().toISOString()}));toast("Approved and listed");});
+  el.querySelectorAll("[data-reject]").forEach(b=>b.onclick=async()=>{const a=S.apps.find(x=>x.id===b.dataset.reject);
+    await S.db.doc("applications/"+a.id).set(Object.assign(strip(a),{status:"rejected",reviewNote:"We could not verify your licence. Reply to the Meuro team with your registration details.",reviewedAt:new Date().toISOString()}));toast("Application rejected");});
+  el.querySelectorAll("[data-unlist]").forEach(b=>b.onclick=async()=>{await S.db.doc("pros/"+b.dataset.unlist).delete();const a=S.apps.find(x=>x.id===b.dataset.unlist);await S.db.doc("applications/"+a.id).set(Object.assign(strip(a),{status:"rejected",reviewNote:"Removed from the directory."}));toast("Removed from directory");});
+  const setStatus=async(key,status)=>{const [uid,id]=key.split("|");const c=S.consults.find(x=>x.id===uid);const list=(c.requests||[]).map(r=>r.id===id?Object.assign({},r,{status,reply:status==="scheduled"?"The Meuro team will contact you to confirm the time.":"The Meuro team could not arrange this request. Please send a new one."}):r);await S.db.doc("consults/"+uid).set({requests:list,updatedAt:new Date().toISOString()});toast(status==="scheduled"?"Marked scheduled":"Declined");};
+  el.querySelectorAll("[data-sched]").forEach(b=>b.onclick=()=>setStatus(b.dataset.sched,"scheduled"));
+  el.querySelectorAll("[data-decline]").forEach(b=>b.onclick=()=>setStatus(b.dataset.decline,"declined"));
+}
+
+/* =====================================================================
+   PROFILE — update details, consent, delete data
+   ===================================================================== */
+function viewProfile(el){
+  const p=S.profile,t=targets(p);
+  el.innerHTML=`<div style="display:grid;gap:18px">
+    <div><span class="eyebrow">My profile</span><h2 style="font-size:28px;margin-top:4px">${esc(p.name)}</h2></div>
+    <section class="card"><h3>Your nutrition profile</h3><pre class="small" style="white-space:pre-wrap;font-family:var(--f-body);margin:10px 0 0">${esc(profileText(p))}</pre>
+      <div class="row" style="margin-top:14px"><button class="btn btn-primary" id="redo">Update my answers</button></div></section>
+    <section class="card"><h3>Privacy & your data</h3><p class="small muted" style="margin:8px 0 12px">Your profile, meal plans, diary and saved conversations are stored in your private space in Meuro. Only you can read them. Consultation requests are shared with the Meuro team and the professional you chose, only if you ticked "share".</p>
+      <button class="btn btn-ghost" id="wipe" style="color:var(--bad);border-color:var(--bad)">Delete all my Meuro data</button><p class="small err" id="wipe-msg"></p></section>
+  </div>`;
+  $("#redo").onclick=()=>{S.ob={step:1,data:Object.assign({},p)};S.editing=true;render();};
+  $("#wipe").onclick=async e=>{const b=e.target;if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent="Tap again to permanently delete everything";$("#wipe-msg").textContent="This deletes your profile, plans, diary and conversations. It cannot be undone.";return;}
+    b.disabled=true;const col=S.db.collection("data/users/"+S.uid);
+    try{const all=await col.get();for(const d of all.docs)await col.doc(d.id).delete();await S.db.doc("consults/"+S.uid).delete().catch(()=>{});
+      S.profile=null;S.plan=null;S.diary=[];S.chat=[];S.ob={step:0,data:{}};toast("Your data was deleted");render();}
+    catch(x){b.disabled=false;$("#wipe-msg").textContent="Could not delete everything. Try again.";}};
+}
+
+/* go */
+if(window.claude&&claude.use)boot();else renderGate();
+})();
+</script>
