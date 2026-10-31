@@ -313,7 +313,7 @@ const ICON={
 const S={uid:null,me:null,isOwner:false,canEdit:false,db:null,sample:null,user:null,
   profile:null,diary:[],plan:null,chat:[],chatSave:true,pros:[],myApp:null,myConsult:null,apps:[],consults:[],
   view:"home",ob:{step:0,data:{}},scan:null,busy:{},dbOk:false};
-function setView(v){S.view=v;try{localStorage.setItem("meuro.view",v);}catch(e){}render();window.scrollTo(0,0);}
+function setView(v){if(v!=="scan")stopCam();S.view=v;try{localStorage.setItem("meuro.view",v);}catch(e){}render();window.scrollTo(0,0);}
 
 /* ---------------- targets (the personalised nutrition profile) ---------------- */
 function ageOf(p){if(p.age)return +p.age;return 30;}
@@ -362,7 +362,7 @@ async function boot(){
   const [db,user,sample]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("sample")]).catch(()=>[null,null,null]);
   S.db=db;S.user=user;S.sample=sample;
   if(user){try{S.uid=await user.id();S.me=await user.me();S.isOwner=await user.isOwner();S.canEdit=await user.canEdit();}catch(e){}}
-  try{const v=localStorage.getItem("meuro.view");if(v)S.view=v;}catch(e){}
+  try{const v=localStorage.getItem("meuro.view");if(v&&v!=="admin")S.view=v;}catch(e){}
   if(!db||!S.uid){renderGate();return;}
   S.dbOk=true;
   const mine=db.collection("data/users/"+S.uid);
@@ -377,7 +377,7 @@ async function boot(){
   db.collection("pros").onSnapshot(snap=>{S.pros=snap.docs.map(d=>Object.assign({id:d.id},d.data()));if(S.view==="pros"||S.view==="home")render();},()=>{});
   db.doc("applications/"+S.uid).onSnapshot(d=>{S.myApp=d.exists?d.data():null;if(S.view==="pros")render();},()=>{});
   db.doc("consults/"+S.uid).onSnapshot(d=>{S.myConsult=d.exists?d.data():null;if(S.view==="pros")render();},()=>{});
-  if(S.canEdit){
+  if(S.isOwner){
     db.collection("applications").onSnapshot(s=>{S.apps=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(S.view==="admin")render();},()=>{});
     db.collection("consults").onSnapshot(s=>{S.consults=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(S.view==="admin")render();},()=>{});
   }
@@ -395,14 +395,14 @@ function render(){
   if(!S.profile||!S.profile.done||S.editing)return renderOnboarding();
   const views={home:viewHome,plan:viewPlan,scan:viewScan,diary:viewDiary,ask:viewAsk,pros:viewPros,profile:viewProfile,admin:viewAdmin};
   if(!views[S.view])S.view="home";
-  if(S.view==="admin"&&!S.canEdit)S.view="home";
-  const nav=[["home","Home"],["plan","Meal plan"],["scan","Scan food"],["diary","Diary"],["ask","Ask Meuro"],["pros","Experts"],["profile","My profile"]].concat(S.canEdit?[["admin","Admin"]]:[]);
+  if(S.view==="admin"&&!S.isOwner)S.view="home";
+  const nav=[["home","Home"],["plan","Meal plan"],["scan","Scan food"],["diary","Diary"],["ask","Ask Meuro"],["pros","Doctors"],["profile","My profile"]];
   const navBtn=([k,l],cls)=>`<button class="navbtn ${cls||""}" data-nav="${k}" ${S.view===k?'aria-current="page"':""}>${ICON[k]}<span>${l}</span></button>`;
   $("#root").innerHTML=`<div class="app">
     <aside class="rail"><div class="brand"><img src="img/logo.png" alt="Meuro"><b>AI</b></div>${nav.map(n=>navBtn(n)).join("")}<div class="spacer"></div><p class="small muted" style="padding:0 10px">Guidance, not a diagnosis. In an emergency, call your local emergency number.</p></aside>
     <main class="main"><div class="inner">
       <div class="mobilehead"><div class="brand row" style="gap:8px"><img src="img/logo.png" alt="Meuro" style="height:24px"><b style="font:600 17px var(--f-display);color:var(--green)">AI</b></div>
-        <div class="row" style="gap:8px"><button class="btn btn-ghost btn-sm" data-nav="pros">Experts</button>${S.canEdit?'<button class="btn btn-ghost btn-sm" data-nav="admin">Admin</button>':""}<button class="icon-btn" data-nav="profile" aria-label="My profile">${ICON.profile}</button></div></div>
+        <div class="row" style="gap:8px"><button class="btn btn-ghost btn-sm" data-nav="pros">Doctors</button><button class="icon-btn" data-nav="profile" aria-label="My profile">${ICON.profile}</button></div></div>
       <div id="view"></div>
     </div></main>
     <nav class="tabbar" aria-label="Main">${[["home","Home"],["plan","Plan"],["scan","Scan"],["diary","Diary"],["ask","Ask"]].map(n=>navBtn(n,n[0]==="scan"?"scanbtn":"")).join("")}</nav>
@@ -465,7 +465,7 @@ function renderOnboarding(){
         <div class="card flat"><div class="small muted">Sodium limit</div><div style="font:600 28px var(--f-display)" class="tnum">${t.na} mg</div><div class="small muted">${t.na<2000?"lower, because of your health answers":"WHO guide"}</div></div>
       </div>
       <p class="muted">BMI ${t.bmi} (${bmiLabel(t.bmi)}). Carbs about ${t.c} g, fat about ${t.f} g, fibre ${t.fb} g, sugar under ${t.s} g a day. Budget about ${naira(dailyBudget(d))} a day.</p>
-      ${t.review?'<div class="note warn"><b>We recommend a professional review.</b> Because of your health answers, ask a registered dietitian or your doctor to check your plan. You can request one from <i>Experts</i>.</div>':""}
+      ${t.review?'<div class="note warn"><b>We recommend a professional review.</b> Because of your health answers, ask a registered dietitian or your doctor to check your plan. You can book one from <i>Doctors</i>.</div>':""}
       <p class="small muted">These are estimates from standard formulas (Mifflin–St Jeor energy equation, WHO sodium and sugar guidance), not a prescription.</p></div>`;}
   $("#root").innerHTML=`<div class="ob"><div class="ob-card">
     <div class="row between"><img src="img/logo.png" alt="Meuro" style="height:26px;width:auto"><span class="small muted tnum">${st.step===0?"":`Step ${Math.min(st.step,7)} of 7`}</span></div>
@@ -555,9 +555,9 @@ function viewHome(el){
       <section class="card"><span class="eyebrow">Budget</span><div style="font:600 26px var(--f-display);margin-top:6px" class="tnum">${naira(dailyBudget(p))}<span class="small muted"> / day</span></div>
         <p class="small muted">${S.plan?`Plan costs ${naira(S.plan.dayCostAvg)} a day for ${p.people} ${+p.people===1?"person":"people"}.`:"Create a plan to see what your meals cost."} ${spentToday?`Logged today: ${naira(spentToday)}.`:""}</p></section>
       <section class="card"><span class="eyebrow">Ask Meuro AI</span><p style="margin:8px 0 12px">"What can I eat for breakfast on my budget?"</p><button class="btn btn-ghost btn-sm" data-nav="ask">Ask a question</button></section>
-      <section class="card"><span class="eyebrow">Talk to an expert</span><p style="margin:8px 0 12px">${S.pros.length?`${S.pros.length} verified professional${S.pros.length===1?"":"s"} available.`:"Request a consultation with a verified dietitian or doctor."}</p><button class="btn btn-ghost btn-sm" data-nav="pros">See experts</button></section>
+      <section class="card"><span class="eyebrow">Talk to a doctor</span><p style="margin:8px 0 12px">${allDocs().length} doctors and dietitians with open times this week.</p><button class="btn btn-ghost btn-sm" data-nav="pros">Book a call</button></section>
     </div>
-    ${t.review?'<div class="note warn">Your health answers mean a registered dietitian or doctor should review your meal plan. <button class="btn-link" data-nav="pros">Request a review</button></div>':""}
+    ${t.review?'<div class="note warn">Your health answers mean a registered dietitian or doctor should review your meal plan. <button class="btn-link" data-nav="pros">Book a dietitian</button></div>':""}
   </div>`;
   el.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>setView(b.dataset.nav));
 }
@@ -695,27 +695,47 @@ async function favMeal(di,mi){
    come from the Meuro food table. Unknown foods carry Claude's estimate,
    clearly marked.
    ===================================================================== */
+function stopCam(){if(S.cam){S.cam.getTracks().forEach(t=>t.stop());S.cam=null;}}
+async function openCam(){
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){S.scan={err:"This browser cannot open the camera here. Tap “Use phone camera” or upload a photo."};return render();}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:960}},audio:false});
+    stopCam();S.cam=stream;S.scan=null;render();
+  }catch(e){S.scan={err:e&&e.name==="NotAllowedError"?"Camera permission was blocked. Allow camera access in your browser, or tap “Use phone camera”.":"The camera could not start here. Tap “Use phone camera” or upload a photo."};render();}
+}
+function snap(){
+  const v=$("#vid");if(!v||!v.videoWidth)return toast("Camera is still starting…");
+  const c=document.createElement("canvas"),max=1280,sc=Math.min(1,max/Math.max(v.videoWidth,v.videoHeight));
+  c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+  c.toBlob(b=>{stopCam();if(!b)return toast("Could not take the photo. Try again.");setScanFile(new File([b],"meal.jpg",{type:"image/jpeg"}));},"image/jpeg",.88);
+}
 function viewScan(el){
-  const sc=S.scan;
+  const sc=S.scan,cam=S.cam;
+  const stage=cam?`<div class="drop has" id="drop" style="background:#000"><video id="vid" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video><span class="pill" style="position:absolute;top:12px;left:12px;background:rgba(0,0,0,.55);color:#fff">● Camera live</span></div>`
+    :`<label class="drop ${sc&&sc.url?"has":""}" id="drop" for="file">${sc&&sc.url?`<img src="${sc.url}" alt="Your meal photo">`:`<div style="display:grid;gap:10px;justify-items:center;color:var(--muted)">${ICON.cam}<b style="color:var(--ink)">Snap or upload your meal</b><span class="small">Tap “Open camera”, or drop a photo here</span></div>`}</label>`;
+  const actions=cam?`<button class="btn btn-orange" id="snap" style="min-width:150px">${ICON.cam} Snap</button><button class="btn btn-ghost" id="camoff">Cancel</button>`
+    :sc&&sc.url?`<button class="btn btn-primary" id="analyse" ${S.busy.scan?"disabled":""}>${S.busy.scan?'<span class="spinner"></span> Analysing…':"Analyse with Meuro AI"}</button><button class="btn btn-ghost" id="retake" ${S.busy.scan?"disabled":""}>Retake</button>`
+    :`<button class="btn btn-primary" id="camon">${ICON.cam} Open camera</button><label class="btn btn-ghost" for="file">Upload photo</label><label class="btn btn-ghost" for="file2">Use phone camera</label>`;
   el.innerHTML=`<div style="display:grid;gap:18px">
-    <div><span class="eyebrow">AI food scanner</span><h2 style="font-size:28px;margin-top:4px">What's on your plate?</h2><p class="muted">Take a photo or upload one. Meuro AI identifies the food and estimates portions; you can correct anything before saving.</p></div>
+    <div><span class="eyebrow">AI food scanner</span><h2 style="font-size:28px;margin-top:4px">What's on your plate?</h2><p class="muted">Snap your meal or upload a photo. Meuro AI identifies the food and estimates portions; you can correct anything before saving.</p></div>
     <div class="scanwrap">
-      <div style="display:grid;gap:12px">
-        <label class="drop ${sc&&sc.url?"has":""}" id="drop" for="file">${sc&&sc.url?`<img src="${sc.url}" alt="Your meal photo">`:`<div style="display:grid;gap:10px;justify-items:center;color:var(--muted)">${ICON.cam}<b style="color:var(--ink)">Take or upload a photo</b><span class="small">JPG or PNG · on a phone this opens your camera</span></div>`}</label>
-        <input type="file" id="file" accept="image/*" capture="environment" hidden>
-        <div class="row"><button class="btn btn-primary" id="analyse" ${!(sc&&sc.blob)||S.busy.scan?"disabled":""}>${S.busy.scan?'<span class="spinner"></span> Analysing…':"Analyse with Meuro AI"}</button>${sc&&sc.url?'<button class="btn btn-ghost" id="reset">New photo</button>':""}</div>
+      <div style="display:grid;gap:12px">${stage}
+        <input type="file" id="file" accept="image/*" hidden><input type="file" id="file2" accept="image/*" capture="environment" hidden>
+        <div class="row">${actions}</div>
         ${S.busy.scan?'<div class="note">Looking at the photo and matching foods to the Meuro African food table. Usually 10–40 seconds.</div>':""}
         <p class="err" role="alert">${esc(sc&&sc.err||"")}</p>
       </div>
       <div>${sc&&sc.result?scanResult(sc):`<div class="card flat" style="display:grid;gap:10px"><h3>How it works</h3><ol class="small muted" style="margin:0;padding-left:18px;display:grid;gap:6px"><li>Meuro AI looks at your photo and lists each food it sees, with an estimated portion in grams and how sure it is.</li><li>Nutrients come from the Meuro African Food Table (FAO/INFOODS West Africa and USDA data), not from guesses.</li><li>You correct the food or portion, then save it to your diary.</li></ol><p class="small muted">A photo cannot show cooking oil, salt or exact weight, so every value is an estimate.</p></div>`}</div>
     </div></div>`;
-  const file=$("#file"),drop=$("#drop");
-  file.onchange=()=>{if(file.files[0])setScanFile(file.files[0]);};
+  if(cam){const v=$("#vid");v.srcObject=cam;v.play&&v.play().catch(()=>{});$("#snap").onclick=snap;$("#camoff").onclick=()=>{stopCam();render();};return;}
+  ["file","file2"].forEach(id=>{const f=$("#"+id);f.onchange=()=>{if(f.files[0])setScanFile(f.files[0]);};});
+  const drop=$("#drop");
   ["dragover","dragenter"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add("drag");}));
   ["dragleave","drop"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove("drag");}));
   drop.addEventListener("drop",ev=>{const f=ev.dataTransfer.files[0];if(f)setScanFile(f);});
+  const on=$("#camon");if(on)on.onclick=openCam;
   const a=$("#analyse");if(a)a.onclick=analyse;
-  const rs=$("#reset");if(rs)rs.onclick=()=>{S.scan=null;render();};
+  const rt=$("#retake");if(rt)rt.onclick=()=>{if(S.scan&&S.scan.url)URL.revokeObjectURL(S.scan.url);S.scan=null;openCam();};
   if(sc&&sc.result)bindScanResult(el);
 }
 function setScanFile(f){
@@ -905,42 +925,82 @@ async function ask(q){
    EXPERTS — verified professionals, applications, consultation requests
    ===================================================================== */
 const PRO_TYPES=[["dietitian","Registered dietitian"],["nutritionist","Nutritionist"],["doctor","Medical doctor"],["specialist","Specialist doctor"]];
+/* Sample doctor profiles for the prototype (fictional people). */
+const DEMO_DOCS=[
+  {id:"d-adaeze",name:"Dr Adaeze Nwosu",type:"dietitian",years:9,location:"Lagos · Online",fee:15000,specialties:"Weight management, Diabetes, Meal planning",bio:"Clinical dietitian who builds realistic Nigerian meal plans for weight loss and blood sugar control.",days:[1,2,3,4,5],hours:[9,10,11,14,15,16],lang:"English, Igbo",color:"#2F7D45"},
+  {id:"d-tunde",name:"Dr Babatunde Adeyemi",type:"specialist",years:14,location:"Ibadan · Online",fee:25000,specialties:"Diabetes, Endocrinology",bio:"Endocrinologist focused on type 2 diabetes, insulin resistance and food choices that steady blood sugar.",days:[1,3,5],hours:[10,11,12,16,17],lang:"English, Yoruba",color:"#4E7FA8"},
+  {id:"d-fatima",name:"Dr Fatima Abubakar",type:"doctor",years:11,location:"Abuja · Online",fee:20000,specialties:"High blood pressure, Heart health",bio:"Family physician helping patients lower blood pressure with salt-smart cooking and lifestyle changes.",days:[2,4,6],hours:[9,10,13,14,18],lang:"English, Hausa",color:"#C2532B"},
+  {id:"d-chiamaka",name:"Chiamaka Eze, RD",type:"nutritionist",years:6,location:"Port Harcourt · Online",fee:10000,specialties:"Budget nutrition, Family meals, Pregnancy",bio:"Nutritionist who helps families eat well on a tight market budget.",days:[1,2,3,4,5,6],hours:[8,9,12,17,18,19],lang:"English, Pidgin",color:"#E8711F"},
+  {id:"d-kwame",name:"Dr Kwame Asante",type:"dietitian",years:8,location:"Accra · Online",fee:18000,specialties:"Sports nutrition, Muscle gain",bio:"Sports dietitian working with athletes and gym-goers on protein, energy and recovery with local foods.",days:[1,2,4,5],hours:[7,8,18,19,20],lang:"English, Twi",color:"#7A5BB5"},
+  {id:"d-ngozi",name:"Dr Ngozi Okafor",type:"specialist",years:12,location:"Enugu · Online",fee:22000,specialties:"Kidney health, Renal diets",bio:"Nephrologist guiding patients on protein, potassium and salt for kidney-friendly eating.",days:[2,3,5],hours:[11,12,15,16],lang:"English, Igbo",color:"#1F7A7A"}
+];
+function allDocs(){return DEMO_DOCS.concat(S.pros.map(p=>Object.assign({days:[1,2,3,4,5],hours:[10,12,15,17],color:"#2F7D45",real:true},p)));}
+function slotsFor(d){const out=[],now=Date.now()+60*60*1000;const mine=new Set(((S.myConsult&&S.myConsult.requests)||[]).filter(r=>r.status!=="cancelled").map(r=>r.slot));
+  for(let i=0;i<10&&out.length<7;i++){const day=new Date();day.setHours(0,0,0,0);day.setDate(day.getDate()+i);if(!d.days.includes(day.getDay()))continue;
+    const times=d.hours.map(h=>{const t=new Date(day);t.setHours(h);return t;}).filter(t=>t.getTime()>now);
+    if(times.length)out.push({day,times:times.map(t=>({iso:t.toISOString(),label:t.toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit",hour12:true}),taken:mine.has(t.toISOString()+"|"+d.id)}))});}
+  return out;}
+function nextSlotLabel(d){const s=slotsFor(d)[0];if(!s)return "No slots this week";const t=s.times[0];const dd=s.day;const today=new Date();today.setHours(0,0,0,0);const diff=Math.round((dd-today)/864e5);return "Next: "+(diff===0?"Today":diff===1?"Tomorrow":dd.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}))+", "+t.label;}
+const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 function viewPros(el){
-  const app=S.myApp,cons=(S.myConsult&&S.myConsult.requests)||[];
+  const app=S.myApp,cons=((S.myConsult&&S.myConsult.requests)||[]).filter(c=>c.status!=="cancelled");
+  const filt=S.proFilter||"all",docs=allDocs().filter(d=>filt==="all"||d.type===filt||(filt==="doctor"&&d.type==="specialist"));
+  const upcoming=cons.filter(c=>c.slot&&new Date(c.slot.split("|")[0])>Date.now()-60*60*1000).sort((a,b)=>a.slot.localeCompare(b.slot));
+  const past=cons.filter(c=>!upcoming.includes(c));
   el.innerHTML=`<div style="display:grid;gap:18px">
-    <div><span class="eyebrow">Doctor & nutritionist network</span><h2 style="font-size:28px;margin-top:4px">Talk to a verified expert</h2><p class="muted">Every professional listed here has had their licence checked by the Meuro team.</p></div>
-    ${S.pros.length?`<div class="grid2">${S.pros.map(p=>`<article class="card pro"><div class="row"><span class="avatar">${esc(initials(p.name))}</span><div style="min-width:0"><h3 style="font-size:18px">${esc(p.name)}</h3><div class="small muted">${esc((PRO_TYPES.find(x=>x[0]===p.type)||[0,p.type])[1])} · ${esc(p.years)} yrs · ${esc(p.location||"Online")}</div></div><span class="pill ok" style="margin-left:auto">✓ Verified</span></div>
-      <p class="small">${esc(p.bio||"")}</p><div class="chips">${String(p.specialties||"").split(",").filter(Boolean).map(s=>`<span class="pill">${esc(s.trim())}</span>`).join("")}</div>
-      <div class="row between"><span class="small muted">${p.fee?"From "+naira(p.fee)+" per session":"Fee on request"} · ${esc(p.availability||"")}</span><button class="btn btn-primary btn-sm" data-req="${p.id}">Request consultation</button></div></article>`).join("")}</div>`:
-      `<div class="empty"><h3>Experts are being verified</h3><p>No professional has been approved yet. You can still send a consultation request and the Meuro team will match you with a verified dietitian or doctor.</p><button class="btn btn-primary btn-sm" data-req="">Request a consultation</button></div>`}
-    <section class="card"><div class="sec-title"><h3>My consultations</h3></div>${cons.length?`<div class="scroll-x"><table class="t"><thead><tr><th>Requested</th><th>With</th><th>Reason</th><th>Status</th></tr></thead><tbody>${cons.slice().reverse().map(c=>`<tr><td class="tnum">${esc(new Date(c.at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}))}</td><td>${esc(c.proName||"Meuro to match")}</td><td>${esc(c.reason)}</td><td><span class="pill ${c.status==="scheduled"?"ok":c.status==="declined"?"bad":"warn"}">${esc(c.status==="scheduled"?"Scheduled":c.status==="declined"?"Declined":"Pending")}</span>${c.reply?`<div class="small muted">${esc(c.reply)}</div>`:""}</td></tr>`).join("")}</tbody></table></div>`:'<p class="small muted">No consultation requests yet.</p>'}</section>
-    <section class="card" id="join"><div class="sec-title"><div><span class="eyebrow">For professionals</span><h3 style="margin-top:4px">Apply to become a Meuro health advisor</h3></div>${app?`<span class="pill ${app.status==="approved"?"ok":app.status==="rejected"?"bad":"warn"}">${app.status==="approved"?"Approved":app.status==="rejected"?"Not approved":"Under review"}</span>`:""}</div>
-      ${app?`<p class="small muted">Application from ${esc(app.name)} received ${esc(new Date(app.submittedAt).toLocaleDateString("en-GB"))}. ${app.status==="pending"?"The Meuro team checks your licence before your profile goes live.":app.status==="approved"?"Your profile is live in the expert list.":esc(app.reviewNote||"")}</p><button class="btn btn-ghost btn-sm" id="reapply">Update application</button>`:
-      `<p class="small muted">Doctors, registered dietitians and nutritionists can apply. Your profile only appears after the Meuro team verifies your licence.</p><button class="btn btn-orange" id="apply">Start application</button>`}</section>
+    <div><span class="eyebrow">Doctors & nutritionists</span><h2 style="font-size:28px;margin-top:4px">Book a call with an expert</h2><p class="muted">Pick a doctor or dietitian, choose a free time, and book a video or phone call.</p></div>
+    ${upcoming.length?`<section class="card" style="display:grid;gap:4px;border-color:var(--green)"><h3>Your upcoming calls</h3>${upcoming.map(c=>{const t=new Date(c.slot.split("|")[0]);return `<div class="meal"><span class="avatar" style="background:${esc(c.color||"var(--green)")}">${esc(initials(c.proName))}</span><div class="body"><h4>${esc(c.proName)}</h4><div class="kv"><span><b>${esc(t.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"short"}))}</b> at <b>${esc(t.toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit",hour12:true}))}</b></span><span>${esc(c.type)}</span><span>${c.fee?naira(c.fee):""}</span></div><p class="small muted">${esc(c.reason)}</p>
+      <div class="row" style="gap:8px;margin-top:6px">${c.type==="Video call"&&c.meetUrl?`<a class="btn btn-primary btn-sm" href="${esc(c.meetUrl)}" target="_blank" rel="noopener">Join video call</a>`:`<span class="pill ok">We'll call ${esc(c.contact||"you")}</span>`}<button class="btn btn-ghost btn-sm" data-cancel="${esc(c.id)}">Cancel booking</button></div></div><span class="pill ok">Booked</span></div>`;}).join("")}</section>`:""}
+    <div class="chips">${[["all","All experts"],["dietitian","Dietitians"],["nutritionist","Nutritionists"],["doctor","Doctors"]].map(([k,l])=>`<button class="chip" data-pf="${k}" aria-pressed="${filt===k}">${l}</button>`).join("")}</div>
+    <div class="grid2">${docs.map(d=>`<article class="card pro"><div class="row" style="flex-wrap:nowrap"><span class="avatar" style="background:${esc(d.color)}">${esc(initials(d.name))}</span><div style="min-width:0;flex:1"><h3 style="font-size:18px">${esc(d.name)}</h3><div class="small muted">${esc((PRO_TYPES.find(x=>x[0]===d.type)||[0,d.type])[1])} · ${esc(d.years)} yrs · ${esc(d.location||"Online")}</div></div></div>
+      <p class="small">${esc(d.bio||"")}</p><div class="chips">${String(d.specialties||"").split(",").filter(Boolean).map(s=>`<span class="pill">${esc(s.trim())}</span>`).join("")}</div>
+      <div class="small muted">Available ${esc(d.days.map(x=>DOW[x]).join(", "))}${d.lang?" · "+esc(d.lang):""}</div>
+      <div class="row between"><div><b class="tnum">${d.fee?naira(d.fee):"Fee on request"}</b><span class="small muted"> / 30-min call</span><div class="small" style="color:var(--green);font-weight:600">${esc(nextSlotLabel(d))}</div></div><button class="btn btn-primary btn-sm" data-book="${esc(d.id)}">Book a call</button></div></article>`).join("")}</div>
+    <p class="small muted">Sample doctor profiles for this prototype.</p>
+    ${past.length?`<section class="card"><h3>Past calls</h3>${past.slice().reverse().map(c=>`<p class="small" style="margin-top:8px">${esc(c.proName||"Meuro expert")} · ${esc(c.slot?new Date(c.slot.split("|")[0]).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):new Date(c.at).toLocaleDateString("en-GB"))} · ${esc(c.reason)}</p>`).join("")}</section>`:""}
+    <section class="card" id="join"><div class="sec-title"><div><span class="eyebrow">For professionals</span><h3 style="margin-top:4px">Are you a doctor or dietitian? Join Meuro</h3></div>${app?`<span class="pill ${app.status==="approved"?"ok":app.status==="rejected"?"bad":"warn"}">${app.status==="approved"?"Approved":app.status==="rejected"?"Not approved":"Under review"}</span>`:""}</div>
+      ${app?`<p class="small muted">Application from ${esc(app.name)} received ${esc(new Date(app.submittedAt).toLocaleDateString("en-GB"))}. ${app.status==="pending"?"Our team checks your licence before your profile goes live.":app.status==="approved"?"Your profile is live in the expert list.":esc(app.reviewNote||"")}</p><button class="btn btn-ghost btn-sm" id="reapply">Update application</button>`:
+      `<p class="small muted">Doctors, registered dietitians and nutritionists can apply. Your profile appears after our team verifies your licence.</p><button class="btn btn-orange" id="apply">Apply to join</button>`}</section>
   </div>`;
-  el.querySelectorAll("[data-req]").forEach(b=>b.onclick=()=>openRequest(S.pros.find(p=>p.id===b.dataset.req)||null));
+  el.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{S.proFilter=b.dataset.pf;render();});
+  el.querySelectorAll("[data-book]").forEach(b=>b.onclick=()=>openBooking(allDocs().find(d=>d.id===b.dataset.book)));
+  el.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent="Tap again to cancel";return;}
+    const list=((S.myConsult&&S.myConsult.requests)||[]).map(r=>r.id===b.dataset.cancel?Object.assign({},r,{status:"cancelled"}):r);
+    await S.db.doc("consults/"+S.uid).set({requests:list,updatedAt:new Date().toISOString()});toast("Booking cancelled");});
   const a=$("#apply")||$("#reapply");if(a)a.onclick=()=>openApply(app);
 }
-function openRequest(pro){
-  const m=document.createElement("div");m.className="modal";
-  m.innerHTML=`<form class="card" role="dialog" aria-modal="true" aria-labelledby="rqh" style="display:grid;gap:14px"><h3 id="rqh">Request a consultation${pro?" with "+esc(pro.name):""}</h3>
-    <label class="field">What do you need help with?<textarea class="input" id="rq-reason" required maxlength="600" placeholder="e.g. A meal plan for high blood pressure on ₦15,000 a week"></textarea></label>
-    <label class="field">When are you free?<input class="input" id="rq-when" maxlength="120" placeholder="e.g. Weekday evenings after 6 pm"></label>
-    <label class="field">Session type<select class="input" id="rq-type"><option>Video call</option><option>Phone call</option><option>In person</option></select></label>
-    <label class="field">How should we contact you?<input class="input" id="rq-contact" maxlength="120" placeholder="Email or phone number" value="${esc((S.me&&S.me.email)||"")}"></label>
-    <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="rq-share" checked> Share my Meuro nutrition profile and diary summary with the professional</label>
-    <p class="small muted">This sends a request. The professional confirms a time with you before anything is booked.</p><p class="err" id="rq-err"></p>
-    <div class="row" style="justify-content:flex-end"><button type="button" class="btn btn-ghost" id="rq-cancel">Cancel</button><button class="btn btn-primary" id="rq-send">Send request</button></div></form>`;
-  document.body.appendChild(m);
-  m.querySelector("#rq-cancel").onclick=()=>m.remove();
-  m.querySelector("form").onsubmit=async e=>{e.preventDefault();
-    const reason=m.querySelector("#rq-reason").value.trim();if(reason.length<5){m.querySelector("#rq-err").textContent="Tell the professional a little about what you need.";return;}
-    const share=m.querySelector("#rq-share").checked;
-    const req={id:"r"+Date.now(),at:new Date().toISOString(),proId:pro?pro.id:null,proName:pro?pro.name:null,reason,when:m.querySelector("#rq-when").value.trim(),type:m.querySelector("#rq-type").value,contact:m.querySelector("#rq-contact").value.trim(),status:"pending",
-      summary:share?profileText(S.profile):null,name:S.profile.name};
-    const list=((S.myConsult&&S.myConsult.requests)||[]).concat([req]).slice(-20);
-    try{await S.db.doc("consults/"+S.uid).set({requests:list,updatedAt:new Date().toISOString()});m.remove();toast("Request sent");}
-    catch(x){m.querySelector("#rq-err").textContent="Could not send the request. Try again.";}};
+function openBooking(d){
+  const m=document.createElement("div");m.className="modal";const st={day:0,slot:null,type:"Video call"};
+  const draw=()=>{const slots=slotsFor(d),cur=slots[st.day];
+    m.innerHTML=`<form class="card" role="dialog" aria-modal="true" aria-labelledby="bkh" style="display:grid;gap:14px">
+      <div class="row" style="flex-wrap:nowrap"><span class="avatar" style="background:${esc(d.color)}">${esc(initials(d.name))}</span><div><h3 id="bkh" style="font-size:19px">Book a call with ${esc(d.name)}</h3><div class="small muted">${esc((PRO_TYPES.find(x=>x[0]===d.type)||[0,d.type])[1])} · ${d.fee?naira(d.fee)+" / 30 min":"Fee on request"}</div></div></div>
+      ${slots.length?`<div class="field">Choose a day<div class="chips">${slots.map((s,i)=>`<button type="button" class="chip" data-day="${i}" aria-pressed="${st.day===i}">${esc(s.day.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}))}</button>`).join("")}</div></div>
+      <div class="field">Choose a time<div class="chips">${cur.times.map(t=>`<button type="button" class="chip" data-slot="${t.iso}" aria-pressed="${st.slot===t.iso}" ${t.taken?"disabled style='opacity:.4;text-decoration:line-through'":""}>${esc(t.label)}</button>`).join("")}</div></div>`:'<p class="note">No free times in the next week.</p>'}
+      <div class="field">Call type<div class="chips">${["Video call","Phone call"].map(x=>`<button type="button" class="chip" data-type="${x}" aria-pressed="${st.type===x}">${x}</button>`).join("")}</div></div>
+      <label class="field">What would you like help with?<textarea class="input" id="bk-reason" maxlength="600" placeholder="e.g. A meal plan for high blood pressure on ₦20,000 a week">${esc(st.reason||"")}</textarea></label>
+      <label class="field">Phone or email<input class="input" id="bk-contact" maxlength="120" value="${esc(st.contact!=null?st.contact:(S.me&&S.me.email)||"")}" placeholder="+234…"></label>
+      <label class="row small" style="gap:8px;font-weight:500"><input type="checkbox" id="bk-share" ${st.share===false?"":"checked"}> Share my Meuro profile and food diary summary with ${esc(d.name.split(" ").slice(0,2).join(" "))}</label>
+      <p class="err" id="bk-err"></p>
+      <div class="row" style="justify-content:flex-end"><button type="button" class="btn btn-ghost" id="bk-cancel">Close</button><button class="btn btn-primary" ${st.slot?"":"disabled"}>${st.slot?"Book "+esc(new Date(st.slot).toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit",hour12:true})):"Pick a time"}</button></div></form>`;
+    const keep=()=>{st.reason=m.querySelector("#bk-reason").value;st.contact=m.querySelector("#bk-contact").value;st.share=m.querySelector("#bk-share").checked;};
+    m.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{keep();st.day=+b.dataset.day;st.slot=null;draw();});
+    m.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{keep();st.slot=b.dataset.slot;draw();});
+    m.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{keep();st.type=b.dataset.type;draw();});
+    m.querySelector("#bk-cancel").onclick=()=>m.remove();
+    m.querySelector("form").onsubmit=async e=>{e.preventDefault();keep();
+      const err=t=>m.querySelector("#bk-err").textContent=t;
+      if(!st.slot)return err("Pick a time.");if(st.reason.trim().length<5)return err("Tell the doctor briefly what you need help with.");if(st.contact.trim().length<5)return err("Add a phone number or email.");
+      const id="b"+Date.now();
+      const req={id,at:new Date().toISOString(),proId:d.id,proName:d.name,color:d.color,fee:d.fee||0,slot:st.slot+"|"+d.id,type:st.type,reason:st.reason.trim(),contact:st.contact.trim(),status:"booked",
+        meetUrl:st.type==="Video call"?"https://meet.jit.si/Meuro-"+id+Math.random().toString(36).slice(2,8):null,summary:st.share?profileText(S.profile):null,name:S.profile.name};
+      const list=((S.myConsult&&S.myConsult.requests)||[]).concat([req]).slice(-30);
+      const btn=m.querySelector("button.btn-primary");btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Booking';
+      try{await S.db.doc("consults/"+S.uid).set({requests:list,updatedAt:new Date().toISOString()});S.myConsult={requests:list};
+        m.innerHTML=`<div class="card" role="dialog" aria-modal="true" style="display:grid;gap:12px;text-align:center;justify-items:center"><span class="avatar" style="background:var(--green);width:56px;height:56px;font-size:24px">✓</span><h3>Call booked</h3><p>${esc(d.name)}<br><b>${esc(new Date(st.slot).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}))}, ${esc(new Date(st.slot).toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit",hour12:true}))}</b> · ${esc(st.type)}</p><p class="small muted">${st.type==="Video call"?"Your video link is in “Your upcoming calls” on the Experts page.":"The doctor will call you on "+esc(st.contact)+"."}</p><button class="btn btn-primary" id="bk-done">Done</button></div>`;
+        m.querySelector("#bk-done").onclick=()=>{m.remove();render();};}
+      catch(x){btn.disabled=false;btn.textContent="Try again";err("Could not book. Check your connection and try again.");}};
+  };
+  draw();document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)m.remove();});
 }
 function openApply(prev){
   const v=prev||{};const m=document.createElement("div");m.className="modal";
@@ -983,7 +1043,7 @@ function viewAdmin(el){
     ${a.status==="pending"?`<div class="row"><button class="btn btn-primary btn-sm" data-approve="${a.id}">Licence verified · Approve</button><button class="btn btn-ghost btn-sm" data-reject="${a.id}">Reject</button></div>`:a.status==="approved"?`<button class="btn btn-ghost btn-sm" data-unlist="${a.id}">Remove from directory</button>`:""}</article>`;
   el.innerHTML=`<div style="display:grid;gap:18px"><div><span class="eyebrow">Admin</span><h2 style="font-size:28px;margin-top:4px">Review queue</h2><p class="muted">Only you and editors of this app can see this page. Check each licence with the professional council before approving.</p></div>
     <section style="display:grid;gap:12px"><h3>Applications waiting (${pend.length})</h3>${pend.length?pend.map(appCard).join(""):'<p class="small muted">No applications waiting.</p>'}</section>
-    <section class="card"><h3>Consultation requests (${reqs.length})</h3>${reqs.length?`<div class="scroll-x"><table class="t"><thead><tr><th>When</th><th>Patient</th><th>With</th><th>Reason</th><th>Contact</th><th>Status</th></tr></thead><tbody>${reqs.map(r=>`<tr><td class="tnum">${esc(new Date(r.at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}))}</td><td>${esc(r.name||"")}<div class="small muted">${esc(r.type)} · ${esc(r.when||"")}</div></td><td>${esc(r.proName||"Match needed")}</td><td>${esc(r.reason)}${r.summary?`<details class="more"><summary>Shared profile</summary><pre class="small" style="white-space:pre-wrap;margin:6px 0 0">${esc(r.summary)}</pre></details>`:""}</td><td class="small">${esc(r.contact)}</td><td>${r.status==="pending"?`<div style="display:grid;gap:6px"><button class="btn btn-primary btn-sm" data-sched="${r.uid}|${r.id}">Mark scheduled</button><button class="btn btn-ghost btn-sm" data-decline="${r.uid}|${r.id}">Decline</button></div>`:`<span class="pill ${r.status==="scheduled"?"ok":"bad"}">${esc(r.status)}</span>`}</td></tr>`).join("")}</tbody></table></div>`:'<p class="small muted">No requests yet.</p>'}</section>
+    <section class="card"><h3>Consultation requests (${reqs.length})</h3>${reqs.length?`<div class="scroll-x"><table class="t"><thead><tr><th>When</th><th>Patient</th><th>With</th><th>Reason</th><th>Contact</th><th>Status</th></tr></thead><tbody>${reqs.map(r=>`<tr><td class="tnum">${esc(new Date(r.at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}))}</td><td>${esc(r.name||"")}<div class="small muted">${esc(r.type)} · ${esc(r.slot?new Date(r.slot.split("|")[0]).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}):(r.when||""))}</div></td><td>${esc(r.proName||"Match needed")}</td><td>${esc(r.reason)}${r.summary?`<details class="more"><summary>Shared profile</summary><pre class="small" style="white-space:pre-wrap;margin:6px 0 0">${esc(r.summary)}</pre></details>`:""}</td><td class="small">${esc(r.contact)}</td><td>${r.status==="pending"?`<div style="display:grid;gap:6px"><button class="btn btn-primary btn-sm" data-sched="${r.uid}|${r.id}">Mark scheduled</button><button class="btn btn-ghost btn-sm" data-decline="${r.uid}|${r.id}">Decline</button></div>`:`<span class="pill ${r.status==="scheduled"?"ok":"bad"}">${esc(r.status)}</span>`}</td></tr>`).join("")}</tbody></table></div>`:'<p class="small muted">No requests yet.</p>'}</section>
     ${done.length?`<section style="display:grid;gap:12px"><h3>Reviewed</h3>${done.map(appCard).join("")}</section>`:""}</div>`;
   el.querySelectorAll("[data-approve]").forEach(b=>b.onclick=async()=>{const a=S.apps.find(x=>x.id===b.dataset.approve);
     await S.db.doc("pros/"+a.id).set({name:a.name,type:a.type,years:a.years,location:a.location,specialties:a.specialties,fee:a.fee,availability:a.availability,bio:a.bio,verifiedAt:new Date().toISOString()});
@@ -1005,9 +1065,10 @@ function viewProfile(el){
     <div><span class="eyebrow">My profile</span><h2 style="font-size:28px;margin-top:4px">${esc(p.name)}</h2></div>
     <section class="card"><h3>Your nutrition profile</h3><pre class="small" style="white-space:pre-wrap;font-family:var(--f-body);margin:10px 0 0">${esc(profileText(p))}</pre>
       <div class="row" style="margin-top:14px"><button class="btn btn-primary" id="redo">Update my answers</button></div></section>
-    <section class="card"><h3>Privacy & your data</h3><p class="small muted" style="margin:8px 0 12px">Your profile, meal plans, diary and saved conversations are stored in your private space in Meuro. Only you can read them. Consultation requests are shared with the Meuro team and the professional you chose, only if you ticked "share".</p>
+    ${S.isOwner?`<section class="card" style="border-style:dashed"><h3>Owner tools</h3><p class="small muted" style="margin:6px 0 12px">Only you, the app owner, can see this. Review doctor applications and bookings.</p><button class="btn btn-ghost btn-sm" data-nav="admin">Open review queue</button></section>`:""}<section class="card"><h3>Privacy & your data</h3><p class="small muted" style="margin:8px 0 12px">Your profile, meal plans, diary and saved conversations are stored in your private space in Meuro. Only you can read them. Consultation requests are shared with the Meuro team and the professional you chose, only if you ticked "share".</p>
       <button class="btn btn-ghost" id="wipe" style="color:var(--bad);border-color:var(--bad)">Delete all my Meuro data</button><p class="small err" id="wipe-msg"></p></section>
   </div>`;
+  el.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>setView(b.dataset.nav));
   $("#redo").onclick=()=>{S.ob={step:1,data:Object.assign({},p)};S.editing=true;render();};
   $("#wipe").onclick=async e=>{const b=e.target;if(!b.dataset.confirm){b.dataset.confirm=1;b.textContent="Tap again to permanently delete everything";$("#wipe-msg").textContent="This deletes your profile, plans, diary and conversations. It cannot be undone.";return;}
     b.disabled=true;const col=S.db.collection("data/users/"+S.uid);

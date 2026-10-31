@@ -9,10 +9,10 @@ Live prototype (private until shared): https://claude.ai/artifact/DYPFeYAM2XdJrL
 |---|---|
 | Onboarding | 8 steps with consent: personal info, body, health conditions, medication, doctor's diet, goals, food preferences, budget (day/week/month), lifestyle. Generates an editable nutrition profile (Mifflin–St Jeor energy, protein, WHO sodium/sugar guides) and flags complex conditions for professional review. |
 | Meal planner | AI composes meals from a priced ingredient table (Lagos market prices, Oct 2026). The app recomputes every meal's cost and nutrients itself, flags over-budget plans and offers "fit to budget". Replace meal, 1- or 7-day plans, adjust budget, favourites, shopping list. |
-| Food scanner | Photo upload / camera → vision AI identifies foods, grams and confidence. Nutrients come from the Meuro African Food Table. User corrects, adds, removes items, then saves to diary. |
+| Food scanner | Live camera with a Snap button (falls back to the phone camera app or photo upload) → vision AI identifies foods, grams and confidence. Nutrients come from the Meuro African Food Table. User corrects, adds, removes items, then saves to diary. |
 | Diary & tracker | Entries by meal slot; add, edit, delete; daily rings, 7/30-day trends, sodium and fibre alerts. |
 | Assistant | Chat grounded in the user's profile, last 7 days of diary and current plan. No diagnosis; emergency symptoms → seek care. Optional saved history. |
-| Experts | Professionals apply (name, email, phone, qualifications, licence no., specialisation, experience, profile, documents link). Admin approves/rejects; only approved professionals are listed. Users request consultations and see status. |
+| Doctors | Directory of doctors, dietitians and nutritionists (sample profiles in the prototype) with fees, languages and open times for the next week. Users pick a day and time, choose video or phone, and book; video calls get a meeting link; bookings can be cancelled. Professionals can apply to join; the owner reviews applications from an owner-only area in My profile (users never see it). |
 
 ## Architecture (prototype)
 - Single-file app: `index.html` (vanilla JS, inline SVG charts) + `img/`.
@@ -40,4 +40,4 @@ Meuro African Food Table v0.1: approximate values from the FAO/INFOODS West Afri
 3. Scan → upload a plate photo → correct a portion → save.
 4. Dashboard: rings and weekly chart update.
 5. Ask → tap a suggested question.
-6. Experts → submit an application → Admin → approve → it appears in the list.
+6. Doctors → Book a call → pick a day and time → booking appears under Your upcoming calls.
